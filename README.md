@@ -1,33 +1,34 @@
-# This branch is still under development
+# don.nih-
 
+# This branch is still under development
 
 # Boilerplate Project
 
 A boilerplate project created in flutter using MobX and Provider. Boilerplate supports both web and mobile, clone the appropriate branches mentioned below:
 
-* For Mobile: https://github.com/zubairehman/flutter-boilerplate-project/tree/master (stable channel)
-* For Web: https://github.com/zubairehman/flutter-boilerplate-project/tree/feature/web-support (beta channel)
+- For Mobile: https://github.com/zubairehman/flutter-boilerplate-project/tree/master (stable channel)
+- For Web: https://github.com/zubairehman/flutter-boilerplate-project/tree/feature/web-support (beta channel)
 
 ## Getting Started
 
 The Boilerplate contains the minimal implementation required to create a new library or project. The repository code is preloaded with some basic components like basic app architecture, app theme, constants and required dependencies to create a new project. By using boiler plate code as standard initializer, we can have same patterns in all the projects that will inherit it. This will also help in reducing setup & development time by allowing you to use same code pattern and avoid re-writing from scratch.
 
-## How to Use 
+## How to Use
 
 **Step 1:**
 
 Download or clone this repo by using the link below:
 
 ```
-https://github.com/zubairehman/flutter-boilerplate-project.git
+https://github.com/raffidevaa/don.nih.git
 ```
 
 **Step 2:**
 
-Go to project root and execute the following command in console to get the required dependencies: 
+Go to project root and execute the following command in console to get the required dependencies:
 
 ```
-flutter pub get 
+flutter pub get
 ```
 
 **Step 3:**
@@ -53,6 +54,7 @@ In-order to hide generated files, navigate to `Android Studio` -> `Preferences` 
 ```
 
 In Visual Studio Code, navigate to `Preferences` -> `Settings` and search for `Files:Exclude`. Add the following patterns:
+
 ```
 **/*.inject.summary
 **/*.inject.dart
@@ -61,44 +63,45 @@ In Visual Studio Code, navigate to `Preferences` -> `Settings` and search for `F
 
 ## Boilerplate Features:
 
-* Splash
-* Login
-* Home
-* Routing
-* Theme
-* Dio
-* Database
-* MobX (to connect the reactive data of your application with the UI)
-* Provider (State Management)
-* Encryption
-* Validation
-* Code Generation
-* User Notifications
-* Logging
-* Dependency Injection
-* Dark Theme Support (new)
-* Multilingual Support (new)
-* Provider example (new)
+- Splash
+- Login
+- Home
+- Routing
+- Theme
+- Dio
+- Database
+- MobX (to connect the reactive data of your application with the UI)
+- Provider (State Management)
+- Encryption
+- Validation
+- Code Generation
+- User Notifications
+- Logging
+- Dependency Injection
+- Dark Theme Support (new)
+- Multilingual Support (new)
+- Provider example (new)
 
 ### Up-Coming Features:
 
-* Connectivity Support
-* Background Fetch Support
+- Connectivity Support
+- Background Fetch Support
 
 ### Libraries & Tools Used
 
-* [Dio](https://github.com/flutterchina/dio)
-* [Database](https://github.com/tekartik/sembast.dart)
-* [MobX](https://github.com/mobxjs/mobx.dart) (to connect the reactive data of your application with the UI)
-* [Provider](https://github.com/rrousselGit/provider) (State Management)
-* [Encryption](https://github.com/xxtea/xxtea-dart)
-* [Validation](https://github.com/dart-league/validators)
-* [Logging](https://github.com/zubairehman/Flogs)
-* [Notifications](https://github.com/AndreHaueisen/flushbar)
-* [Json Serialization](https://github.com/dart-lang/json_serializable)
-* [Dependency Injection](https://github.com/fluttercommunity/get_it)
+- [Dio](https://github.com/flutterchina/dio)
+- [Database](https://github.com/tekartik/sembast.dart)
+- [MobX](https://github.com/mobxjs/mobx.dart) (to connect the reactive data of your application with the UI)
+- [Provider](https://github.com/rrousselGit/provider) (State Management)
+- [Encryption](https://github.com/xxtea/xxtea-dart)
+- [Validation](https://github.com/dart-league/validators)
+- [Logging](https://github.com/zubairehman/Flogs)
+- [Notifications](https://github.com/AndreHaueisen/flushbar)
+- [Json Serialization](https://github.com/dart-lang/json_serializable)
+- [Dependency Injection](https://github.com/fluttercommunity/get_it)
 
 ### Folder Structure
+
 Here is the core folder structure which flutter provides.
 
 ```
@@ -129,7 +132,7 @@ Now, lets dive into the lib folder which has the main code for the application.
 ```
 1- constants - All the application level constants are defined in this directory with-in their respective files. This directory contains the constants for `theme`, `dimentions`, `api endpoints`, `preferences` and `strings`.
 2- data - Contains the data layer of your project, includes directories for local, network and shared pref/cache.
-3- stores - Contains store(s) for state-management of your application, to connect the reactive data of your application with the UI. 
+3- stores - Contains store(s) for state-management of your application, to connect the reactive data of your application with the UI.
 4- ui — Contains all the ui of your project, contains sub directory for each screen.
 5- util — Contains the utilities/common functions of your application.
 6- widgets — Contains the common widgets for your applications. For example, Button, TextField etc.
@@ -160,16 +163,16 @@ data/
     |- constants/
     |- datasources/
     |- app_database.dart
-   
+
 |- network/
     |- constants/
     |- exceptions/
     |- rest_client.dart
-    
+
 |- sharedpref
     |- constants/
     |- shared_preference_helper.dart
-    
+
 |- repository.dart
 
 ```
@@ -200,7 +203,7 @@ ui/
 
 ### Utils
 
-Contains the common file(s) and utilities used in a project. The folder structure is as follows: 
+Contains the common file(s) and utilities used in a project. The folder structure is as follows:
 
 ```
 utils/
@@ -296,4 +299,3 @@ Checkout [wiki](https://github.com/zubairehman/flutter-boilerplate-project/wiki)
 I will be happy to answer any questions that you may have on this approach, and if you want to lend a hand with the boilerplate then please feel free to submit an issue and/or pull request 🙂
 
 Again to note, this is example can appear as over-architectured for what it is - but it is an example only. If you liked my work, don’t forget to ⭐ star the repo to show your support.
-
