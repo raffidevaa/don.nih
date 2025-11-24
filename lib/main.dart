@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'order_status.dart';
+import 'menu_detail.dart';
 
 void main() {
   runApp(const MainApp());
@@ -10,34 +11,52 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // MaterialApp creates the Navigator
     return const MaterialApp(
-      home: HomePage(), // Set home to our new HomePage widget
+      debugShowCheckedModeBanner: false,
+      home: HomePage(),
     );
   }
 }
 
-// This is the new HomePage widget
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // This context is now under MaterialApp, so it has a Navigator.
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Aplikasi Don.Nih"),
-      ),
+      appBar: AppBar(title: const Text("Aplikasi Don.Nih")),
       body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            // This will work now!
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const OrderStatusPage()),
-            );
-          },
-          child: const Text('Lihat Status Pesanan'),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Tombol lama
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const OrderStatusPage(),
+                  ),
+                );
+              },
+              child: const Text('Lihat Status Pesanan'),
+            ),
+
+            const SizedBox(height: 20),
+
+            // 🔥 Tombol baru untuk ke MenuDetailPage
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MenuDetailPage(),
+                  ),
+                );
+              },
+              child: const Text('Buka Menu Detail'),
+            ),
+          ],
         ),
       ),
     );
