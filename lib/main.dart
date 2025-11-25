@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'order_status.dart';
 import 'menu_detail.dart';
+import 'cart_page.dart';
 
 void main() {
   runApp(const MainApp());
@@ -44,7 +45,7 @@ class HomePage extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // 🔥 Tombol baru untuk ke MenuDetailPage
+            //MenuDetailPage
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
@@ -55,6 +56,19 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: const Text('Buka Menu Detail'),
+            ),
+
+            const SizedBox(height: 20),
+
+            // CartPage
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartPage()),
+                );
+              },
+              child: const Text('Buka Cart Page'),
             ),
           ],
         ),
