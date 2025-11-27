@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-import 'order_status.dart';
-import 'menu_detail.dart';
-import 'cart_page.dart';
+import 'presentation/pages/order_status.dart';
+import 'presentation/pages/menu_detail.dart';
+import 'presentation/pages/cart_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+
+void main() async {
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
   runApp(const MainApp());
 }
 
