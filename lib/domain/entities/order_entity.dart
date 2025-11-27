@@ -2,6 +2,7 @@ class OrderEntity {
   final int id;
   final int userId;
   final int cartId;
+  final int quantity;
   final String orderStatus;
   final String paymentStatus;
   final String midtransOrderId;
@@ -12,6 +13,7 @@ class OrderEntity {
     required this.id,
     required this.userId,
     required this.cartId,
+    required this.quantity,
     required this.orderStatus,
     required this.paymentStatus,
     required this.midtransOrderId,

@@ -3,7 +3,6 @@ class CartEntity {
   final int userId;
   final int menuToppingId;
   final double total;
-  final int quantity;
   final bool isPurchased;
 
   CartEntity({
@@ -11,7 +10,6 @@ class CartEntity {
     required this.userId,
     required this.menuToppingId,
     required this.total,
-    required this.quantity,
     required this.isPurchased,
   });
 }
