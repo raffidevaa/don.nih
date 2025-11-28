@@ -4,6 +4,7 @@ class UserEntity {
   final String fullname;
   final String password;
   final String phoneNumber;
+  final String role;
 
   UserEntity({
     required this.id,
@@ -11,5 +12,6 @@ class UserEntity {
     required this.fullname,
     required this.password,
     required this.phoneNumber,
+    required this.role,
   });
 }
