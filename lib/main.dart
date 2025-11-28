@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'order_status.dart';
-import 'menu_detail.dart';
-import 'cart_page.dart';
+import 'presentation/pages/order_status.dart';
+import 'presentation/pages/menu_detail.dart';
+import 'presentation/pages/cart_page.dart';
 
 void main() {
   runApp(const MainApp());
