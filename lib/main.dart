@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'presentation/pages/order_status.dart';
 import 'presentation/pages/menu_detail.dart';
 import 'presentation/pages/cart_page.dart';
+import 'presentation/pages/loadingscreen.dart';
+import 'presentation/pages/homepage.dart' as NewHomePage;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -74,6 +76,32 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: const Text('Buka Cart Page'),
+            ),
+
+            const SizedBox(height: 20),
+
+            // LoadingScreen
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoadingScreen()),
+                );
+              },
+              child: const Text('Buka Loading Screen'),
+            ),
+
+            const SizedBox(height: 20),
+
+            // New Home Page
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const NewHomePage.HomePage()),
+                );
+              },
+              child: const Text('Buka Home Page'),
             ),
           ],
         ),
