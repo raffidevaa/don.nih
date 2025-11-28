@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'order_detail.dart';
 
-// 1. Model data untuk setiap pesanan
+// Model data untuk setiap pesanan
 class Order {
   final String id;
   final String price;
@@ -17,7 +18,7 @@ class OrderStatusPage extends StatefulWidget {
 }
 
 class _OrderStatusPageState extends State<OrderStatusPage> {
-  // 2. Data dummy yang sesuai dengan desain
+  // Data dummy yang sesuai dengan desain
   final List<Order> _orders = [
     Order(id: '#005', price: '213.000', status: 'Order Confirmed'),
     Order(id: '#004', price: '84.000', status: 'Order Processed'),
@@ -31,7 +32,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        // 3. AppBar yang disesuaikan
         elevation: 0,
         backgroundColor: Colors.white,
         centerTitle: false,
@@ -61,11 +61,11 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
         ),
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.all(20.0),
+        // 4. Padding diperbaiki
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
         itemCount: _orders.length,
         itemBuilder: (context, index) {
           final order = _orders[index];
-          // 4. Memanggil widget kartu kustom untuk setiap item
           return OrderStatusCard(order: order);
         },
       ),
@@ -73,7 +73,7 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
   }
 }
 
-// 5. Widget kartu kustom untuk menampilkan detail pesanan
+// Widget kartu kustom untuk menampilkan detail pesanan
 class OrderStatusCard extends StatelessWidget {
   final Order order;
 
@@ -81,58 +81,69 @@ class OrderStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Container(
-        padding: const EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20.0),
-          border: Border.all(color: const Color(0xFFD2B48C), width: 1.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Order ${order.id}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+    // 2. Menambahkan GestureDetector untuk navigasi
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const OrderDetailPage()),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12.0),
+        child: Container(
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20.0),
+            border: Border.all(color: const Color(0xFFD2B48C), width: 1.5),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Order ${order.id}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Rp${order.price}',
-                  style: const TextStyle(color: Colors.black, fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  order.status,
-                  style: const TextStyle(
-                    color: Color(0xFFC89B64),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(height: 4),
+                  Text(
+                    'Rp${order.price}',
+                    // 3. Warna diperbaiki
+                    style: const TextStyle(color: Colors.grey, fontSize: 14),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    order.status,
+                    style: const TextStyle(
+                      color: Color(0xFFC89B64),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                width: 35,
+                height: 35,
+                decoration: const BoxDecoration(
+                  // 3. Warna diperbaiki
+                  color: Color(0xFF6F4E37),
+                  shape: BoxShape.circle,
                 ),
-              ],
-            ),
-            Container(
-              width: 35,
-              height: 35,
-              decoration: const BoxDecoration(
-                color: Colors.black,
-                shape: BoxShape.circle,
+                child: const Icon(
+                  Icons.arrow_forward,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
-              child: const Icon(
-                Icons.arrow_forward,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
