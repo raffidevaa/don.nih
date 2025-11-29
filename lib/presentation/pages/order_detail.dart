@@ -96,7 +96,7 @@ class OrderDetailPage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          ...orderItems.map((item) => _buildOrderItemRow(item)).toList(),
+          ...orderItems.map((item) => _buildOrderItemRow(item)),
           const SizedBox(height: 16),
           _buildSummaryRow('Payment Method', 'Cash'),
           const SizedBox(height: 10),

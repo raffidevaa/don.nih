@@ -4,7 +4,9 @@ import 'presentation/pages/menu_detail.dart';
 import 'presentation/pages/cart_page.dart';
 import 'presentation/pages/loadingscreen.dart';
 import 'presentation/pages/homepage.dart' as NewHomePage;
+import 'presentation/pages/favourites_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
@@ -78,6 +80,20 @@ class HomePage extends StatelessWidget {
               child: const Text('Buka Cart Page'),
             ),
 
+            const SizedBox(height: 20),
+
+            //FavouritesPage
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NewHomePage.HomePage(initialIndex: 1),
+                  ),
+                );
+              },
+              child: const Text('Buka Favourites Page'),
+            ),
             const SizedBox(height: 20),
 
             // LoadingScreen
