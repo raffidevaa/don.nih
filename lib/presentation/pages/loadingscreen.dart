@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class LoadingScreen extends StatefulWidget {
-  const LoadingScreen({Key? key}) : super(key: key);
+  const LoadingScreen({super.key});
 
   @override
   State<LoadingScreen> createState() => _LoadingScreenState();
@@ -143,10 +143,10 @@ class SteamLine extends StatelessWidget {
   final double delayFraction;
 
   const SteamLine({
-    Key? key,
+    super.key,
     required this.controller,
     required this.delayFraction,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -181,10 +181,10 @@ class SpinnerDot extends StatelessWidget {
   final double delay;
 
   const SpinnerDot({
-    Key? key,
+    super.key,
     required this.controller,
     required this.delay,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
