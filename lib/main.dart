@@ -1,3 +1,4 @@
+import 'package:donnih/presentation/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'presentation/pages/order_status.dart';
 import 'presentation/pages/menu_detail.dart';
@@ -66,7 +67,6 @@ class HomePage extends StatelessWidget {
               },
               child: const Text('Buka Menu Detail'),
             ),
-
             const SizedBox(height: 20),
 
             // CartPage
@@ -93,6 +93,20 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: const Text('Buka Favourites Page'),
+            ),
+            const SizedBox(height: 20),
+
+            //ProfilePage
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NewHomePage.HomePage(initialIndex: 3),
+                  ),
+                );
+              },
+              child: const Text('Buka Profile'),
             ),
             const SizedBox(height: 20),
 
