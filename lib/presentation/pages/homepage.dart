@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'favourites_page.dart'; 
+import 'profile_page.dart';
 import 'cart_page.dart'; 
 
 class HomePage extends StatefulWidget {
@@ -53,7 +54,7 @@ class _HomePageState extends State<HomePage> {
       case 0: return _buildOriginalHomeUI();
       case 1: return const FavouritesPage(); // Tab Favourite
       case 2: return const CartPage();       // Tab Cart
-      case 3: return const Center(child: Text("Profile Page")); // Tab Profile
+      case 3: return const ProfilePage(); // Tab Profile
       default: return _buildOriginalHomeUI();
     }
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// --- DATA DUMMY ---
 class DummyProduct {
   final String name;
   final String price;
@@ -32,7 +31,6 @@ final List<DummyProduct> dummyFavourites = [
   ),
 ];
 
-// --- CONSTANT WARNA ---
 const Color kPrimaryBrown = Color(0xFF8B6F47);
 const Color kDarkBrown = Color(0xFF5c3d2e);
 
@@ -41,13 +39,12 @@ class FavouritesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // KITA BALIKIN SCAFFOLD-NYA BIAR AMAN DIBUKA DIMANA SAJA
     return Scaffold( 
       backgroundColor: Colors.white, 
       body: SafeArea( 
         child: Column(
           children: [
-            // BAGIAN ATAS: Judul & Search Bar
+
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
               child: Column(
@@ -95,7 +92,7 @@ class FavouritesPage extends StatelessWidget {
               ),
             ),
 
-            // BAGIAN BAWAH: List Makanan
+            // List Makanan
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
