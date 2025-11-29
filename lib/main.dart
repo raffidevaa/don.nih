@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'presentation/pages/order_status.dart';
 import 'presentation/pages/menu_detail.dart';
 import 'presentation/pages/cart_page.dart';
+import 'presentation/pages/sign_up_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -61,6 +62,21 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: const Text('Buka Menu Detail'),
+            ),
+
+            const SizedBox(height: 20),
+
+            //SignUpPage
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SignUpPage(),
+                  ),
+                );
+              },
+              child: const Text('Buka Sign Up Page'),
             ),
 
             const SizedBox(height: 20),
