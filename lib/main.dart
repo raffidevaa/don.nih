@@ -6,14 +6,21 @@ import 'presentation/pages/cart_page.dart';
 import 'presentation/pages/loadingscreen.dart';
 import 'presentation/pages/homepage.dart' as NewHomePage;
 import 'presentation/pages/favourites_page.dart';
+import 'presentation/pages/login_poc.dart';
 import 'presentation/pages/sign_up_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
-  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load();
+
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+  );
+
   runApp(const MainApp());
 }
 
@@ -152,6 +159,20 @@ class HomePage extends StatelessWidget {
               },
               child: const Text('Buka Home Page'),
             ),
+
+            const SizedBox(height: 20),
+
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
+              child: const Text('LOGIN POC'),
+            ),
+
+            const SizedBox(height: 20),
           ],
         ),
       ),

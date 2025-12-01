@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../data/datasources/auth_datasource.dart';
+import '../../data/models/signup_request.dart';
+import 'login_poc.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -9,36 +14,101 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _phoneNumberController = TextEditingController();
+
+  final _email = TextEditingController();
+  final _username = TextEditingController();
+  final _password = TextEditingController();
+  final _fullname = TextEditingController();
+  final _phone = TextEditingController();
 
   bool _isLoading = false;
+
+  // ============================================================
+  // SIGN UP FUNCTION
+  // ============================================================
+  Future<void> _handleSignUp() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    final datasource = AuthDataSource(Supabase.instance.client);
+
+    try {
+      final req = SignUpRequest(
+        email: _email.text.trim(),
+        password: _password.text.trim(),
+        username: _username.text.trim(),
+        fullname: _fullname.text.trim(),
+        phoneNumber: _phone.text.trim(),
+      );
+
+      final user = await datasource.signUp(req);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Sign Up Success. Welcome ${user.username}!")),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Sign Up Failed: $e")));
+    }
+
+    setState(() => _isLoading = false);
+  }
+
+  // ============================================================
+  // BUILD INPUT FIELD
+  // ============================================================
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    bool obscure = false,
+    String? Function(String?)? validator,
+  }) {
+    return SizedBox(
+      height: 50,
+      child: TextFormField(
+        controller: controller,
+        obscureText: obscure,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+          enabledBorder: const OutlineInputBorder(
+            borderSide: BorderSide(
+              color: Color.fromARGB(255, 180, 170, 164),
+              width: 2,
+            ),
+          ),
+        ),
+        validator: validator,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // Desain melengkung dengan warna coklat di bagian atas
+          // TOP SHAPE
           ClipPath(
             clipper: CurvedTopClipper(),
-            child: Container(
-              height: 100,
-              color: Colors.brown.shade200, // Warna coklat latar belakang
-            ),
+            child: Container(height: 100, color: Colors.brown.shade200),
           ),
-          
-          // Desain melengkung dengan warna coklat di bagian bawah
+
+          // BOTTOM SHAPE
           Align(
             alignment: Alignment.bottomCenter,
             child: ClipPath(
               clipper: CurvedBottomClipper(),
-              child: Container(
-                height: 100,
-                color: Colors.brown.shade200, // Warna coklat latar belakang bawah
-              ),
+              child: Container(height: 100, color: Colors.brown.shade200),
             ),
           ),
 
@@ -52,167 +122,119 @@ class _SignUpPageState extends State<SignUpPage> {
                   const Center(
                     child: Text(
                       'Welcome!',
-                      style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.brown), // Mengubah warna menjadi coklat
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.brown,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 5), 
+                  const SizedBox(height: 5),
                   const Center(
                     child: Text(
                       'Create your account.',
-                      style: TextStyle(fontSize: 18, color: Colors.grey), // Mengubah warna menjadi abu-abu
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
                     ),
                   ),
                   const SizedBox(height: 30),
 
-                  // Username Field
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.8, // Lebar 80% dari layar
-                    height: 50, // Tinggi input field
-                    child: TextFormField(
-                      controller: _usernameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Username',
-                        border: OutlineInputBorder(),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Color.fromARGB(255, 180, 170, 164), width: 2), // Warna emas saat tidak fokus
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your username';
-                        }
-                        return null;
-                      },
-                    ),
+                  // EMAIL
+                  _buildInputField(
+                    controller: _email,
+                    label: "Email",
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return "Enter your email";
+                      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(v)) {
+                        return "Invalid email format";
+                      }
+                      return null;
+                    },
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
-                  // Password Field
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.8, // Lebar 80% dari layar
-                    height: 50, // Tinggi input field
-                    child: TextFormField(
-                      controller: _passwordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        border: OutlineInputBorder(),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Color.fromARGB(255, 180, 170, 164), width: 2), // Warna emas saat tidak fokus
-                        ),
-                      ),
-                      obscureText: true,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
-                        }
-                        return null;
-                      },
-                    ),
+                  // USERNAME
+                  _buildInputField(
+                    controller: _username,
+                    label: "Username",
+                    validator: (v) =>
+                        v == null || v.isEmpty ? "Enter your username" : null,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
-                  // Full Name Field
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.8, // Lebar 80% dari layar
-                    height: 50, // Tinggi input field
-                    child: TextFormField(
-                      controller: _fullNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Full Name',
-                        border: OutlineInputBorder(),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Color.fromARGB(255, 180, 170, 164), width: 2), // Warna emas saat tidak fokus
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your full name';
-                        }
-                        return null;
-                      },
-                    ),
+                  // PASSWORD
+                  _buildInputField(
+                    controller: _password,
+                    label: "Password",
+                    obscure: true,
+                    validator: (v) =>
+                        v == null || v.isEmpty ? "Enter your password" : null,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
-                  // Phone Number Field
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.8, // Lebar 80% dari layar
-                    height: 50, // Tinggi input field
-                    child: TextFormField(
-                      controller: _phoneNumberController,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone Number',
-                        border: OutlineInputBorder(),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Color.fromARGB(255, 180, 170, 164), width: 2), // Warna emas saat tidak fokus
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your phone number';
-                        }
-                        return null;
-                      },
-                    ),
+                  // FULL NAME
+                  _buildInputField(
+                    controller: _fullname,
+                    label: "Full Name",
+                    validator: (v) =>
+                        v == null || v.isEmpty ? "Enter your full name" : null,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
 
-                  // Sign Up Button (with gradient)
+                  // PHONE NUMBER
+                  _buildInputField(
+                    controller: _phone,
+                    label: "Phone Number",
+                    validator: (v) => v == null || v.isEmpty
+                        ? "Enter your phone number"
+                        : null,
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  // SIGN UP BUTTON
                   Container(
-                    width: double.infinity,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       gradient: LinearGradient(
-                        colors: [const Color.fromARGB(255, 207, 114, 68), Colors.brown.shade600],
+                        colors: [
+                          const Color.fromARGB(255, 207, 114, 68),
+                          Colors.brown.shade600,
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                     ),
                     child: ElevatedButton(
-                      onPressed: _isLoading ? null : () {
-                        if (_formKey.currentState!.validate()) {
-                          setState(() {
-                            _isLoading = true;
-                          });
-
-                          // Simulating form submission process
-                          Future.delayed(const Duration(seconds: 2), () {
-                            setState(() {
-                              _isLoading = false;
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Sign Up Success')),
-                            );
-                          });
-                        }
-                      },
+                      onPressed: _isLoading ? null : _handleSignUp,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                               'Sign Up',
-                              style: TextStyle(color: Colors.white), // Set the text color to white
+                              style: TextStyle(color: Colors.white),
                             ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent, // Transparent to show gradient
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
                     ),
                   ),
+
                   const SizedBox(height: 30),
 
-                  // Login Link TextButton
                   TextButton(
                     onPressed: () {
-                      // Navigate to Login Page
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
+                      );
                     },
                     child: const Text(
                       "Already have an account? Login here.",
-                      style: TextStyle(
-                        color: Colors.brown, // Set the color to brown
-                      ),
+                      style: TextStyle(color: Colors.brown),
                     ),
                   ),
                 ],
@@ -225,46 +247,41 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 }
 
-// Custom clipper untuk membuat desain melengkung di bagian atas
+// ============================================================
+// CLIPPERS (unchanged, hanya dirapikan sedikit)
+// ============================================================
 class CurvedTopClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
-    var path = Path();
-    path.lineTo(0, 0);  // Mulai dari titik kiri atas
-    path.lineTo(0, size.height * 0.2);  // Menurunkan ke bawah sebelum kurva
-    path.quadraticBezierTo(size.width * 0.5, size.height, size.width - 70, size.height - 70);  // Membuat kurva di bagian bawah
-    path.quadraticBezierTo(size.width * 0.4, size.height - 70, size.width, size.height - 5);
-    path.lineTo(size.width, size.height * 0.3); // Draw to the bottom-right corner
-    path.lineTo(size.width, 0);  // Kembali ke titik kanan atas
-    path.close();  // Menutup path
-
+    final path = Path();
+    path.lineTo(0, size.height - 40);
+    path.quadraticBezierTo(
+      size.width / 2,
+      size.height + 20,
+      size.width,
+      size.height - 40,
+    );
+    path.lineTo(size.width, 0);
+    path.close();
     return path;
   }
 
   @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) {
-    return false;
-  }
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
-// Custom clipper untuk membuat desain melengkung di bagian bawah
 class CurvedBottomClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
-    var path = Path();
-    path.lineTo(0, 0);  // Mulai dari titik kiri atas
-    path.lineTo(0, size.height * 0.2);  // Menurunkan ke bawah sebelum kurva
-    path.quadraticBezierTo(size.width * 0.4, size.height - 70, size.width, size.height - 5);
-    path.quadraticBezierTo(size.width * 0.5, size.height, size.width - 70, size.height - 70);  // Membuat kurva di bagian bawah
-    path.lineTo(size.height * 0.3, size.width); // Draw to the bottom-right corner
-    path.lineTo(0, size.width);  // Kembali ke titik kanan atas
-    path.close();  // Menutup path
-
+    final path = Path();
+    path.moveTo(0, 40);
+    path.quadraticBezierTo(size.width / 2, -20, size.width, 40);
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
     return path;
   }
 
   @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) {
-    return false;
-  }
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
