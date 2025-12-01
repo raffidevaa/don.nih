@@ -6,8 +6,8 @@ import 'presentation/pages/cart_page.dart';
 import 'presentation/pages/loadingscreen.dart';
 import 'presentation/pages/homepage.dart' as NewHomePage;
 import 'presentation/pages/favourites_page.dart';
+import 'presentation/pages/sign_up_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
@@ -67,6 +67,19 @@ class HomePage extends StatelessWidget {
               },
               child: const Text('Buka Menu Detail'),
             ),
+
+            const SizedBox(height: 20),
+
+            //SignUpPage
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SignUpPage()),
+                );
+              },
+              child: const Text('Buka Sign Up Page'),
+            ),
             const SizedBox(height: 20),
 
             // CartPage
@@ -88,7 +101,8 @@ class HomePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const NewHomePage.HomePage(initialIndex: 1),
+                    builder: (context) =>
+                        const NewHomePage.HomePage(initialIndex: 1),
                   ),
                 );
               },
@@ -102,7 +116,8 @@ class HomePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const NewHomePage.HomePage(initialIndex: 3),
+                    builder: (context) =>
+                        const NewHomePage.HomePage(initialIndex: 3),
                   ),
                 );
               },
@@ -115,7 +130,9 @@ class HomePage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const LoadingScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const LoadingScreen(),
+                  ),
                 );
               },
               child: const Text('Buka Loading Screen'),
@@ -128,7 +145,9 @@ class HomePage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const NewHomePage.HomePage()),
+                  MaterialPageRoute(
+                    builder: (context) => const NewHomePage.HomePage(),
+                  ),
                 );
               },
               child: const Text('Buka Home Page'),
