@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/datasources/menu_datasource.dart';
+import '../../data/models/menu_model.dart';
 
 class MenuDetailPage extends StatefulWidget {
-  const MenuDetailPage({super.key});
+  final int? menuId; // ID menu yang akan di-fetch
+
+  const MenuDetailPage({super.key, this.menuId});
 
   @override
   State<MenuDetailPage> createState() => _MenuDetailPageState();
@@ -11,6 +16,12 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
   String size = "Regular";
   String temperature = "Cold";
   bool isFavorite = false;
+
+  // Data dari Supabase
+  late MenuDataSource _menuDataSource;
+  MenuModel? _menu;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   Map<String, bool> toppings = {
     "Extra Espresso": true,
@@ -34,7 +45,8 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
     "Nata de Coco": 8000,
   };
 
-  int basePrice = 20000;
+  /// Base price dari menu (dari database, sudah sesuai size)
+  int get basePrice => _menu?.price.toInt() ?? 20000;
 
   int get totalPrice {
     int toppingTotal = toppings.entries
@@ -44,7 +56,129 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _menuDataSource = MenuDataSource(Supabase.instance.client);
+    _fetchMenuDetail();
+  }
+
+  /// GET /api/menu/{id} - Fetch menu by ID dari Supabase
+  Future<void> _fetchMenuDetail() async {
+    if (widget.menuId == null) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      final menu = await _menuDataSource.getMenuById(widget.menuId!);
+
+      if (menu == null) {
+        // 404 - Menu not found
+        setState(() {
+          _errorMessage = 'Menu not found';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      setState(() {
+        _menu = menu;
+        size = menu.size.isNotEmpty ? menu.size : "Regular";
+        temperature = menu.temperature.isNotEmpty ? menu.temperature : "Cold";
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// Fetch menu by name and size (untuk update harga ketika size berubah)
+  Future<void> _onSizeChanged(String newSize) async {
+    if (_menu == null) return;
+
+    setState(() {
+      size = newSize;
+    });
+
+    try {
+      final menuWithSize = await _menuDataSource.getMenuByNameAndSize(_menu!.name, newSize);
+      if (menuWithSize != null) {
+        setState(() {
+          _menu = menuWithSize;
+        });
+      }
+    } catch (e) {
+      // Jika gagal fetch, tetap pakai size yang dipilih
+    }
+  }
+
+  /// Helper untuk mapping nama menu ke image asset (sementara static)
+  String _getImageForMenu(String? menuName) {
+    if (menuName == null) return 'assets/images/menu_cappucino.png';
+    final name = menuName.toLowerCase();
+    if (name.contains('espresso')) return 'assets/images/espresso.png';
+    if (name.contains('americano')) return 'assets/images/americano.png';
+    if (name.contains('latte')) return 'assets/images/caffelatte.png';
+    if (name.contains('cappuccino')) return 'assets/images/menu_cappucino.png';
+    if (name.contains('peach')) return 'assets/images/peachtea.png';
+    if (name.contains('apple')) return 'assets/images/appletea.png';
+    if (name.contains('pancake')) return 'assets/images/pancake.png';
+    if (name.contains('curry')) return 'assets/images/curry.png';
+    if (name.contains('green tea')) return 'assets/images/greentea.png';
+    if (name.contains('caramel')) return 'assets/images/caramel.png';
+    return 'assets/images/menu_cappucino.png';
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Loading state
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Error state (404 - Menu not found)
+    if (_errorMessage != null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.brown),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(_errorMessage!, style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _fetchMenuDetail,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -54,10 +188,16 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
               children: [
                 // GAMBAR ATAS
                 Image.asset(
-                  "assets/images/menu_cappucino.png",
+                  _getImageForMenu(_menu?.name),
                   width: double.infinity,
                   height: 350,
                   fit: BoxFit.cover,
+                  errorBuilder: (ctx, err, stack) => Container(
+                    width: double.infinity,
+                    height: 350,
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.image, size: 100, color: Colors.grey),
+                  ),
                 ),
 
                 // Tombol back
@@ -118,7 +258,7 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                     const SizedBox(height: 10),
 
                     Text(
-                      "Cappuccino",
+                      _menu?.name ?? "Menu",
                       style: TextStyle(
                         color: Colors.brown.shade800,
                         fontSize: 28,
@@ -157,13 +297,13 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                         _optionButton(
                           "Regular",
                           size == "Regular",
-                          () => setState(() => size = "Regular"),
+                          () => _onSizeChanged("Regular"),
                         ),
                         const SizedBox(width: 12),
                         _optionButton(
                           "Large",
                           size == "Large",
-                          () => setState(() => size = "Large"),
+                          () => _onSizeChanged("Large"),
                         ),
                       ],
                     ),
