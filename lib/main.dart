@@ -1,7 +1,11 @@
+import 'package:donnih/presentation/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'presentation/pages/order_status.dart';
 import 'presentation/pages/menu_detail.dart';
 import 'presentation/pages/cart_page.dart';
+import 'presentation/pages/loadingscreen.dart';
+import 'presentation/pages/homepage.dart' as NewHomePage;
+import 'presentation/pages/favourites_page.dart';
 import 'presentation/pages/sign_up_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -71,14 +75,11 @@ class HomePage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const SignUpPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const SignUpPage()),
                 );
               },
               child: const Text('Buka Sign Up Page'),
             ),
-
             const SizedBox(height: 20),
 
             // CartPage
@@ -90,6 +91,66 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: const Text('Buka Cart Page'),
+            ),
+
+            const SizedBox(height: 20),
+
+            //FavouritesPage
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const NewHomePage.HomePage(initialIndex: 1),
+                  ),
+                );
+              },
+              child: const Text('Buka Favourites Page'),
+            ),
+            const SizedBox(height: 20),
+
+            //ProfilePage
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const NewHomePage.HomePage(initialIndex: 3),
+                  ),
+                );
+              },
+              child: const Text('Buka Profile'),
+            ),
+            const SizedBox(height: 20),
+
+            // LoadingScreen
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LoadingScreen(),
+                  ),
+                );
+              },
+              child: const Text('Buka Loading Screen'),
+            ),
+
+            const SizedBox(height: 20),
+
+            // New Home Page
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NewHomePage.HomePage(),
+                  ),
+                );
+              },
+              child: const Text('Buka Home Page'),
             ),
           ],
         ),
