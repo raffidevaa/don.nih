@@ -6,11 +6,11 @@ import 'presentation/pages/cart_page.dart';
 import 'presentation/pages/loadingscreen.dart';
 import 'presentation/pages/homepage.dart' as NewHomePage;
 import 'presentation/pages/favourites_page.dart';
-import 'presentation/pages/login_poc.dart';
 import 'presentation/pages/sign_up_page.dart';
 import 'presentation/pages/login_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +22,8 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
+  usePathUrlStrategy();
+
   runApp(const MainApp());
 }
 
@@ -30,9 +32,20 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: HomePage(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const LoadingScreen(),
+        '/login': (context) => const LoginPage(),
+        '/signup': (context) => const SignUpPage(),
+        '/home': (context) => const HomePage(),
+        '/order-status': (context) => const OrderStatusPage(),
+        '/menu-detail': (context) => const MenuDetailPage(),
+        '/cart': (context) => const CartPage(),
+        '/favourites': (context) => const FavouritesPage(),
+        '/profile': (context) => const ProfilePage(),
+      },
     );
   }
 }
@@ -90,7 +103,7 @@ class HomePage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-              //LoginPage
+            //LoginPage
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
@@ -171,18 +184,6 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: const Text('Buka Home Page'),
-            ),
-
-            const SizedBox(height: 20),
-
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              },
-              child: const Text('LOGIN POC'),
             ),
 
             const SizedBox(height: 20),
