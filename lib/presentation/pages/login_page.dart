@@ -11,8 +11,6 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _phoneNumberController = TextEditingController();
 
   bool _isLoading = false;
 
@@ -21,150 +19,176 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       body: Stack(
         children: [
+          // TOP CURVE
           ClipPath(
             clipper: CurvedTopClipper(),
-            child: Container(
-              height: 100,
-              color: Colors.brown.shade200, 
-            ),
+            child: Container(height: 130, color: Colors.brown.shade200),
           ),
-          
+
+          // BOTTOM CURVE
           Align(
             alignment: Alignment.bottomCenter,
             child: ClipPath(
               clipper: CurvedBottomClipper(),
-              child: Container(
-                height: 100,
-                color: Colors.brown.shade200, 
-              ),
+              child: Container(height: 130, color: Colors.brown.shade200),
             ),
           ),
 
+          // MAIN FORM
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Form(
               key: _formKey,
               child: ListView(
                 children: [
-                  const SizedBox(height: 155),
-                  const Center(
-                    child: Text(
-                      'Welcome back!',
-                      style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.brown),
-                    ),
-                  ),
-                  const SizedBox(height: 5), 
-                  const Center(
-                    child: Text(
-                      'Login to your account.',
-                      style: TextStyle(fontSize: 18, color: Colors.grey), 
-                    ),
-                  ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 150),
 
-                
+                  const Center(
+                    child: Text(
+                      'Welcome Back!',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.brown,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 5),
+
+                  const Center(
+                    child: Text(
+                      'Login to continue your journey',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // USERNAME
                   SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.8, 
-                    height: 50, 
+                    height: 55,
                     child: TextFormField(
                       controller: _usernameController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Username',
-                        border: OutlineInputBorder(),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Color.fromARGB(255, 180, 170, 164), width: 2),
+                        labelStyle: const TextStyle(color: Colors.brown),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        enabledBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color.fromARGB(255, 180, 170, 164),
+                            width: 2,
+                          ),
                         ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your username';
+                          return 'Username required';
                         }
                         return null;
                       },
                     ),
                   ),
-                  const SizedBox(height: 10),
 
-           
+                  const SizedBox(height: 15),
+
+                  // PASSWORD
                   SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.8, 
-                    height: 50, 
+                    height: 55,
                     child: TextFormField(
                       controller: _passwordController,
-                      decoration: const InputDecoration(
+                      obscureText: true,
+                      decoration: InputDecoration(
                         labelText: 'Password',
-                        border: OutlineInputBorder(),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Color.fromARGB(255, 180, 170, 164), width: 2), 
+                        labelStyle: const TextStyle(color: Colors.brown),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        enabledBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color.fromARGB(255, 180, 170, 164),
+                            width: 2,
+                          ),
                         ),
                       ),
-                      obscureText: true,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
+                          return 'Password required';
                         }
                         return null;
                       },
                     ),
                   ),
-                  const SizedBox(height: 10),
 
-                
+                  const SizedBox(height: 30),
+
+                  // LOGIN BUTTON
                   Container(
-                    width: double.infinity,
+                    height: 55,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       gradient: LinearGradient(
-                        colors: [const Color.fromARGB(255, 207, 114, 68), Colors.brown.shade600],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                        colors: [
+                          const Color.fromARGB(255, 207, 114, 68),
+                          Colors.brown.shade600,
+                        ],
                       ),
                     ),
                     child: ElevatedButton(
-                      onPressed: _isLoading ? null : () {
-                        if (_formKey.currentState!.validate()) {
-                          setState(() {
-                            _isLoading = true;
-                          });
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              if (_formKey.currentState!.validate()) {
+                                setState(() => _isLoading = true);
 
-                          
-                          Future.delayed(const Duration(seconds: 2), () {
-                            setState(() {
-                              _isLoading = false;
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Sign Up Success')),
-                            );
-                          });
-                        }
-                      },
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              'Login',
-                              style: TextStyle(color: Colors.white), 
-                            ),
+                                Future.delayed(const Duration(seconds: 2), () {
+                                  setState(() => _isLoading = false);
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Login Success!'),
+                                    ),
+                                  );
+
+                                  // ⬇️ Navigate to Home
+                                  Navigator.pushReplacementNamed(
+                                    context,
+                                    '/home',
+                                  );
+                                });
+                              }
+                            },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent, 
-                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              "Login",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
-                  const SizedBox(height: 30),
 
-                  
+                  const SizedBox(height: 25),
+
+                  // SIGN UP REDIRECT
                   TextButton(
                     onPressed: () {
-                      
+                      Navigator.pushNamed(context, '/signup');
                     },
                     child: const Text(
-                      "Don't have an account? Sign Up here.",
-                      style: TextStyle(
-                        color: Colors.brown, 
-                      ),
+                      "Don't have an account? Sign Up",
+                      style: TextStyle(color: Colors.brown, fontSize: 16),
                     ),
                   ),
                 ],
@@ -177,46 +201,59 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-
+/// Same clippers you already use
 class CurvedTopClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     var path = Path();
-    path.lineTo(0, 0); 
-    path.lineTo(0, size.height * 0.2); 
-    path.quadraticBezierTo(size.width * 0.5, size.height, size.width - 70, size.height - 70); 
-    path.quadraticBezierTo(size.width * 0.4, size.height - 70, size.width, size.height - 5);
-    path.lineTo(size.width, size.height * 0.3); 
-    path.lineTo(size.width, 0);  
-    path.close();  
-
+    path.lineTo(0, 0);
+    path.lineTo(0, size.height * 0.2);
+    path.quadraticBezierTo(
+      size.width * 0.5,
+      size.height,
+      size.width - 70,
+      size.height - 70,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.4,
+      size.height - 70,
+      size.width,
+      size.height - 5,
+    );
+    path.lineTo(size.width, size.height * 0.3);
+    path.lineTo(size.width, 0);
+    path.close();
     return path;
   }
 
   @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) {
-    return false;
-  }
+  bool shouldReclip(oldClipper) => false;
 }
-
 
 class CurvedBottomClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     var path = Path();
-    path.lineTo(0, 0);  
-    path.lineTo(0, size.height * 0.2);  
-    path.quadraticBezierTo(size.width * 0.4, size.height - 70, size.width, size.height - 5);
-    path.quadraticBezierTo(size.width * 0.5, size.height, size.width - 70, size.height - 70);  
-    path.lineTo(size.height * 0.3, size.width); 
-    path.lineTo(0, size.width);  
-    path.close();  
-
+    path.lineTo(0, 0);
+    path.lineTo(0, size.height * 0.2);
+    path.quadraticBezierTo(
+      size.width * 0.4,
+      size.height - 70,
+      size.width,
+      size.height - 5,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.5,
+      size.height,
+      size.width - 70,
+      size.height - 70,
+    );
+    path.lineTo(size.height * 0.3, size.width);
+    path.lineTo(0, size.width);
+    path.close();
     return path;
   }
 
   @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) {
-    return false;
-  }
+  bool shouldReclip(oldClipper) => false;
 }

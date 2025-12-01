@@ -14,10 +14,16 @@ class _LoadingScreenState extends State<LoadingScreen>
   @override
   void initState() {
     super.initState();
+
     _steamController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat();
+
+    // Auto navigate to LoginPage
+    Future.delayed(const Duration(seconds: 2), () {
+      Navigator.pushReplacementNamed(context, '/login');
+    });
   }
 
   @override
@@ -34,10 +40,7 @@ class _LoadingScreenState extends State<LoadingScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF3d2817),
-              const Color(0xFF5c3d2e),
-            ],
+            colors: [const Color(0xFF3d2817), const Color(0xFF5c3d2e)],
           ),
         ),
         child: Stack(
@@ -55,9 +58,7 @@ class _LoadingScreenState extends State<LoadingScreen>
               ),
             ),
             // Dark Overlay
-            Container(
-              color: Colors.black.withOpacity(0.7),
-            ),
+            Container(color: Colors.black.withOpacity(0.7)),
             // Content
             Center(
               child: Column(
@@ -180,11 +181,7 @@ class SpinnerDot extends StatelessWidget {
   final AnimationController controller;
   final double delay;
 
-  const SpinnerDot({
-    super.key,
-    required this.controller,
-    required this.delay,
-  });
+  const SpinnerDot({super.key, required this.controller, required this.delay});
 
   @override
   Widget build(BuildContext context) {
@@ -192,7 +189,9 @@ class SpinnerDot extends StatelessWidget {
       animation: controller,
       builder: (context, child) {
         double progress = (controller.value + delay / 1.4) % 1.0;
-        double scale = progress < 0.4 ? progress / 0.4 : 1 - (progress - 0.4) / 0.6;
+        double scale = progress < 0.4
+            ? progress / 0.4
+            : 1 - (progress - 0.4) / 0.6;
 
         return Transform.scale(
           scale: scale,
