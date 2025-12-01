@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'favourites_page.dart'; 
 import 'profile_page.dart';
-import 'cart_page.dart'; 
+import 'cart_page.dart';
+import 'menu_detail.dart';
+import '../../data/datasources/menu_datasource.dart';
+import '../../data/models/menu_model.dart';
 
 class HomePage extends StatefulWidget {
   // Tambahkan variabel ini untuk menerima pesan "Mau buka tab nomor berapa?"
@@ -19,28 +23,126 @@ class _HomePageState extends State<HomePage> {
   late int _selectedIndex; 
   String? _selectedCategory;
 
+  // Data dari Supabase
+  late MenuDataSource _menuDataSource;
+  List<MenuModel> _menus = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
   @override
   void initState() {
     super.initState();
     // Ambil nilai dari "pesan" yang dikirim saat HomePage dibuka
     _selectedIndex = widget.initialIndex;
+    
+    // Inisialisasi MenuDataSource dengan Supabase client
+    _menuDataSource = MenuDataSource(Supabase.instance.client);
+    _fetchMenus();
   }
 
-  // --- DATA PRODUK (TETAP SAMA) ---
-  final List<Map<String, dynamic>> products = [
-    {'name': 'Espresso', 'price': 9000, 'image': 'assets/images/espresso.png', 'category': 'COFFEE'},
-    {'name': 'Americano', 'price': 18000, 'image': 'assets/images/americano.png', 'category': 'COFFEE'},
-    {'name': 'Cafe Latte', 'price': 20000, 'image': 'assets/images/caffelatte.png', 'category': 'COFFEE'},
-    {'name': 'Cappuccino', 'price': 20000, 'image': 'assets/images/menu_cappucino.png', 'category': 'COFFEE'},
-    {'name': 'Peach Tea', 'price': 18000, 'image': 'assets/images/peachtea.png', 'category': 'NON-COFFEE'},
-    {'name': 'Apple Tea', 'price': 18000, 'image': 'assets/images/appletea.png', 'category': 'NON-COFFEE'},
-    {'name': 'Strawberry Pancake', 'price': 36000, 'image': 'assets/images/pancake.png', 'category': 'DESSERT'},
-    {'name': 'Japanese Curry', 'price': 42000, 'image': 'assets/images/curry.png', 'category': 'MEAL'},
-  ];
+  /// Fetch semua menu dari Supabase
+  Future<void> _fetchMenus() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
 
-  List<Map<String, dynamic>> get filteredProducts {
-    if (_selectedCategory == null) return products;
-    return products.where((product) => product['category'] == _selectedCategory).toList();
+      final menus = await _menuDataSource.getAllMenu();
+      
+      setState(() {
+        _menus = menus;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// Helper untuk mapping nama menu ke image asset (sementara static)
+  String _getImageForMenu(String menuName) {
+    final name = menuName.toLowerCase();
+    if (name.contains('espresso')) return 'assets/images/espresso.png';
+    if (name.contains('americano')) return 'assets/images/americano.png';
+    if (name.contains('latte')) return 'assets/images/caffelatte.png';
+    if (name.contains('cappuccino')) return 'assets/images/menu_cappucino.png';
+    if (name.contains('peach')) return 'assets/images/peachtea.png';
+    if (name.contains('apple')) return 'assets/images/appletea.png';
+    if (name.contains('pancake')) return 'assets/images/pancake.png';
+    if (name.contains('curry')) return 'assets/images/curry.png';
+    if (name.contains('green tea')) return 'assets/images/greentea.png';
+    if (name.contains('caramel')) return 'assets/images/caramel.png';
+    // Default image
+    return 'assets/images/caffelatte.png';
+  }
+
+  /// Helper untuk mapping nama menu ke category (sementara static)
+  String _getCategoryForMenu(String menuName) {
+    final name = menuName.toLowerCase();
+    // COFFEE
+    if (name.contains('espresso') || 
+        name.contains('americano') || 
+        name.contains('latte') || 
+        name.contains('cappuccino') ||
+        name.contains('mocha') ||
+        name.contains('coffee')) {
+      return 'COFFEE';
+    }
+    // NON-COFFEE
+    if (name.contains('tea') || 
+        name.contains('matcha') ||
+        name.contains('chocolate') ||
+        name.contains('milk')) {
+      return 'NON-COFFEE';
+    }
+    // DESSERT
+    if (name.contains('pancake') || 
+        name.contains('cake') || 
+        name.contains('waffle') ||
+        name.contains('ice cream') ||
+        name.contains('pudding')) {
+      return 'DESSERT';
+    }
+    // BREAKFAST
+    if (name.contains('toast') || 
+        name.contains('egg') || 
+        name.contains('sandwich') ||
+        name.contains('croissant')) {
+      return 'BREAKFAST';
+    }
+    // MEAL
+    if (name.contains('curry') || 
+        name.contains('rice') || 
+        name.contains('pasta') ||
+        name.contains('noodle') ||
+        name.contains('chicken') ||
+        name.contains('beef')) {
+      return 'MEAL';
+    }
+    return 'COFFEE'; // default
+  }
+
+  /// Group menu by nama (ambil 1 saja per nama menu) + filter by category
+  List<MenuModel> get filteredMenus {
+    // Group by name, ambil yang pertama saja per nama
+    final Map<String, MenuModel> uniqueMenus = {};
+    for (var menu in _menus) {
+      if (!uniqueMenus.containsKey(menu.name)) {
+        uniqueMenus[menu.name] = menu;
+      }
+    }
+    
+    // Filter by selected category
+    if (_selectedCategory == null) {
+      return uniqueMenus.values.toList();
+    }
+    
+    return uniqueMenus.values
+        .where((menu) => _getCategoryForMenu(menu.name) == _selectedCategory)
+        .toList();
   }
 
   void _onCategorySelected(String category) {
@@ -101,7 +203,23 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         Expanded(
-          child: SingleChildScrollView(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _errorMessage != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Error: $_errorMessage'),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: _fetchMenus,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -125,8 +243,16 @@ class _HomePageState extends State<HomePage> {
                   child: GridView.builder(
                     shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 15, mainAxisSpacing: 15, childAspectRatio: 0.85),
-                    itemCount: filteredProducts.length,
-                    itemBuilder: (context, index) => ProductCard(name: filteredProducts[index]['name'], price: filteredProducts[index]['price'], image: filteredProducts[index]['image']),
+                    itemCount: filteredMenus.length,
+                    itemBuilder: (context, index) {
+                      final menu = filteredMenus[index];
+                      return ProductCard(
+                        menuId: menu.id,
+                        name: menu.name,
+                        price: menu.price.toInt(),
+                        image: _getImageForMenu(menu.name),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -161,16 +287,38 @@ class CategoryChip extends StatelessWidget {
 }
 
 class ProductCard extends StatelessWidget {
-  final String name; final int price; final String image;
-  const ProductCard({super.key, required this.name, required this.price, required this.image});
+  final int menuId;
+  final String name;
+  final int price;
+  final String image;
+
+  const ProductCard({
+    super.key,
+    required this.menuId,
+    required this.name,
+    required this.price,
+    required this.image,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey[200]!, width: 1.5), color: Colors.white),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: ClipRRect(borderRadius: const BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)), child: Image.asset(image, width: double.infinity, fit: BoxFit.cover, errorBuilder: (ctx, err, stack) => const Center(child: Icon(Icons.image))))),
-          Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600), maxLines: 1), const SizedBox(height: 5), Text('Rp$price', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))])),
-      ]),
+    return GestureDetector(
+      onTap: () {
+        // Navigate ke MenuDetailPage dengan menuId
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MenuDetailPage(menuId: menuId),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey[200]!, width: 1.5), color: Colors.white),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: ClipRRect(borderRadius: const BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)), child: Image.asset(image, width: double.infinity, fit: BoxFit.cover, errorBuilder: (ctx, err, stack) => const Center(child: Icon(Icons.image))))),
+            Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600), maxLines: 1), const SizedBox(height: 5), Text('Rp$price', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))])),
+        ]),
+      ),
     );
   }
 }
