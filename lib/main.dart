@@ -7,6 +7,7 @@ import 'presentation/pages/loadingscreen.dart';
 import 'presentation/pages/homepage.dart' as NewHomePage;
 import 'presentation/pages/favourites_page.dart';
 import 'presentation/pages/sign_up_page.dart';
+import 'presentation/pages/login_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -79,6 +80,18 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: const Text('Buka Sign Up Page'),
+            ),
+            const SizedBox(height: 20),
+
+              //LoginPage
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
+              child: const Text('Buka Login Page'),
             ),
             const SizedBox(height: 20),
 
