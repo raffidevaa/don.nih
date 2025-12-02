@@ -4,7 +4,7 @@ import 'presentation/pages/order_status.dart';
 import 'presentation/pages/menu_detail.dart';
 import 'presentation/pages/cart_page.dart';
 import 'presentation/pages/loadingscreen.dart';
-import 'presentation/pages/homepage.dart' as NewHomePage;
+import 'presentation/pages/homepage.dart';
 import 'presentation/pages/favourites_page.dart';
 import 'presentation/pages/sign_up_page.dart';
 import 'presentation/pages/login_page.dart';
@@ -50,8 +50,8 @@ class MainApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+class AllPage extends StatelessWidget {
+  const AllPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -134,8 +134,7 @@ class HomePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        const NewHomePage.HomePage(initialIndex: 1),
+                    builder: (context) => const HomePage(initialIndex: 1),
                   ),
                 );
               },
@@ -149,8 +148,7 @@ class HomePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        const NewHomePage.HomePage(initialIndex: 3),
+                    builder: (context) => const HomePage(initialIndex: 3),
                   ),
                 );
               },
@@ -178,9 +176,7 @@ class HomePage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const NewHomePage.HomePage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const HomePage()),
                 );
               },
               child: const Text('Buka Home Page'),

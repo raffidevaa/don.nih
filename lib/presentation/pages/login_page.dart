@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -9,7 +10,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   bool _isLoading = false;
@@ -69,9 +70,9 @@ class _LoginPageState extends State<LoginPage> {
                   SizedBox(
                     height: 55,
                     child: TextFormField(
-                      controller: _usernameController,
+                      controller: _emailController,
                       decoration: InputDecoration(
-                        labelText: 'Username',
+                        labelText: 'Email',
                         labelStyle: const TextStyle(color: Colors.brown),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -85,7 +86,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Username required';
+                          return 'Email required';
                         }
                         return null;
                       },
@@ -139,27 +140,61 @@ class _LoginPageState extends State<LoginPage> {
                     child: ElevatedButton(
                       onPressed: _isLoading
                           ? null
-                          : () {
+                          : () async {
                               if (_formKey.currentState!.validate()) {
                                 setState(() => _isLoading = true);
 
-                                Future.delayed(const Duration(seconds: 2), () {
-                                  setState(() => _isLoading = false);
+                                try {
+                                  // 🔥 Login ke Supabase
+                                  final response = await Supabase
+                                      .instance
+                                      .client
+                                      .auth
+                                      .signInWithPassword(
+                                        email: _emailController.text.trim(),
+                                        password: _passwordController.text
+                                            .trim(),
+                                      );
+
+                                  if (response.user == null)
+                                    throw Exception("Login gagal");
+
+                                  // 🔥 Ambil profile dari tabel users
+                                  final profile = await Supabase.instance.client
+                                      .from("users")
+                                      .select()
+                                      .eq("id", response.user!.id)
+                                      .maybeSingle();
+
+                                  if (profile == null) {
+                                    throw Exception(
+                                      "Data profil tidak ditemukan di tabel users",
+                                    );
+                                  }
 
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Login Success!'),
+                                    SnackBar(
+                                      content: Text(
+                                        "Welcome ${profile["fullname"]}!",
+                                      ),
                                     ),
                                   );
 
-                                  // ⬇️ Navigate to Home
+                                  // ⬇️ Navigate ke home
                                   Navigator.pushReplacementNamed(
                                     context,
                                     '/home',
                                   );
-                                });
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(e.toString())),
+                                  );
+                                } finally {
+                                  setState(() => _isLoading = false);
+                                }
                               }
                             },
+
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,

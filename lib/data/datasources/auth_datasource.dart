@@ -17,18 +17,19 @@ class AuthDataSource {
       password: request.password,
     );
 
-    final user = res.user;
-    if (user == null) throw Exception("Login gagal");
+    if (res.user == null) throw Exception("Login gagal");
+
+    final userId = res.user!.id;
 
     final profile = await supabase
         .from("users")
         .select()
-        .eq("email", user.email!)
+        .eq("id", userId)
         .maybeSingle();
 
     return UserEntity(
-      id: int.tryParse(user.id) ?? 0,
-      email: user.email ?? "",
+      id: userId,
+      email: profile?["email"] ?? "",
       username: profile?["username"] ?? "",
       fullname: profile?["fullname"] ?? "",
       phoneNumber: profile?["phone_number"] ?? "",

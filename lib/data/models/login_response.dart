@@ -18,7 +18,7 @@ class LoginResponse {
       status: json["status"],
       message: json["message"],
       data: UserEntity(
-        id: int.tryParse(d["id"].toString()) ?? 0,
+        id: d["id"].toString(),
         username: d["username"],
         fullname: d["fullname"],
         email: d["email"],
