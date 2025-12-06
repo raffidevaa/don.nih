@@ -8,6 +8,7 @@ import 'presentation/pages/homepage.dart';
 import 'presentation/pages/favourites_page.dart';
 import 'presentation/pages/sign_up_page.dart';
 import 'presentation/pages/login_page.dart';
+import 'presentation/pages/admin_order_status.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -45,6 +46,7 @@ class MainApp extends StatelessWidget {
         '/cart': (context) => const CartPage(),
         '/favourites': (context) => const FavouritesPage(),
         '/profile': (context) => const ProfilePage(),
+        '/admin-order-status': (context) => const AdminOrderStatusPage(),
       },
     );
   }
