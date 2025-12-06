@@ -1,6 +1,6 @@
 class OrderEntity {
   final int id;
-  final int userId;
+  final String userId;
   final int cartId;
   final int quantity;
   final String orderStatus;
