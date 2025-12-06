@@ -3,16 +3,12 @@ import '../../domain/entities/menu_entity.dart';
 class MenuModel {
   final int id;
   final String name;
-  final String size;
-  final String temperature;
   final double price;
   final int? topping; // nullable karena bisa null di database
 
   MenuModel({
     required this.id,
     required this.name,
-    required this.size,
-    required this.temperature,
     required this.price,
     this.topping,
   });
@@ -22,8 +18,6 @@ class MenuModel {
     return MenuModel(
       id: json['id'] as int,
       name: json['name'] as String? ?? '',
-      size: json['size'] as String? ?? '',
-      temperature: json['temperature'] as String? ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       topping: json['topping'] as int?,
     );
@@ -34,8 +28,6 @@ class MenuModel {
     return {
       'id': id,
       'name': name,
-      'size': size,
-      'temperature': temperature,
       'price': price,
       if (topping != null) 'topping': topping,
     };
@@ -43,14 +35,7 @@ class MenuModel {
 
   /// Convert ke Entity
   MenuEntity toEntity() {
-    return MenuEntity(
-      id: id,
-      name: name,
-      size: size,
-      temperature: temperature,
-      price: price,
-      topping: topping,
-    );
+    return MenuEntity(id: id, name: name, price: price, topping: topping);
   }
 
   /// Create from Entity
@@ -58,8 +43,6 @@ class MenuModel {
     return MenuModel(
       id: entity.id,
       name: entity.name,
-      size: entity.size,
-      temperature: entity.temperature,
       price: entity.price,
       topping: entity.topping,
     );
