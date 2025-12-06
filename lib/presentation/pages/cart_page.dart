@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_bottom_nav.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/datasources/storage_datasource.dart';
+import '../../data/datasources/cart_datasource.dart';
+import '../../data/models/cart_item_response.dart';
 
+/// UI MODEL
 class CartItem {
   String image;
   String title;
   String subtitle;
-  int price;
+  double price;
   int quantity;
 
   CartItem({
@@ -25,66 +30,67 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
+  final SupabaseClient supabase = Supabase.instance.client;
+  final StorageDatasource storage = StorageDatasource();
+  final CartDatasource cartDatasource = CartDatasource();
   int currentIndex = 2;
 
-  /// LIST CART DYNAMIC
-  List<CartItem> cartItems = [
-    CartItem(
-      image: "assets/images/menu_cappucino.png",
-      title: "Cappuccino",
-      subtitle: "Regular, Cold, Extra Espresso",
-      price: 58000,
-      quantity: 2,
-    ),
-    CartItem(
-      image: "assets/images/menu_cappucino.png",
-      title: "Peach Tea",
-      subtitle: "Regular, Less Sugar",
-      price: 18000,
-      quantity: 1,
-    ),
-    CartItem(
-      image: "assets/images/menu_cappucino.png",
-      title: "Americano",
-      subtitle: "Large, Cold, No Sugar",
-      price: 23000,
-      quantity: 1,
-    ),
-    CartItem(
-      image: "assets/images/menu_cappucino.png",
-      title: "Strawberry Pancake",
-      subtitle: "—",
-      price: 72000,
-      quantity: 2,
-    ),
-    CartItem(
-      image: "assets/images/menu_cappucino.png",
-      title: "Japanese Curry",
-      subtitle: "Spicy, Chicken",
-      price: 42000,
-      quantity: 1,
-    ),
-  ];
+  List<CartItem> cartItems = [];
+  bool loading = true;
 
-  /// TOTAL HARGA OTOMATIS
-  int get totalPrice {
-    int sum = 0;
+  @override
+  void initState() {
+    super.initState();
+    loadCart();
+  }
+
+  Future<void> loadCart() async {
+    try {
+      final authUser = supabase.auth.currentUser;
+      final String userId =
+          authUser?.id ?? "00000000-0000-0000-0000-000000000000";
+
+      final response = await cartDatasource.getCartItems(userId);
+
+      /// Convert backend model -> UI model
+      cartItems = response.map((r) {
+        return CartItem(
+          image: r.menuImage,
+          title: r.menuName,
+          subtitle: r.toppings.isEmpty ? "—" : r.toppings.join(", "),
+          price: r.baseTotal,
+          quantity: 1, // quantity hanya dipakai saat create order
+        );
+      }).toList();
+    } catch (e) {
+      print("Error loading cart: $e");
+    }
+
+    setState(() => loading = false);
+  }
+
+  /// TOTAL HARGA
+  double get totalPrice {
+    double sum = 0;
     for (var item in cartItems) {
       sum += item.price * item.quantity;
     }
     return sum;
   }
 
-  /// FORMAT RUPIAH SEDERHANA
-  String rupiah(int number) {
+  /// FORMAT RUPIAH
+  String rupiah(num number) {
     return "Rp${number.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => "${m[1]}.")}";
   }
 
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: SafeArea(
         child: Column(
           children: [
@@ -111,9 +117,7 @@ class _CartPageState extends State<CartPage> {
                       CartItemWidget(
                         item: cartItems[i],
                         onAdd: () {
-                          setState(() {
-                            cartItems[i].quantity++;
-                          });
+                          setState(() => cartItems[i].quantity++);
                         },
                         onRemove: () {
                           setState(() {
@@ -126,43 +130,43 @@ class _CartPageState extends State<CartPage> {
 
                     const SizedBox(height: 30),
 
-                    const Text(
-                      "Payment Method",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    // const Text(
+                    //   "Payment Method",
+                    //   style: TextStyle(
+                    //     fontSize: 18,
+                    //     fontWeight: FontWeight.bold,
+                    //   ),
+                    // ),
+                    // const SizedBox(height: 8),
 
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text("Cash", style: TextStyle(fontSize: 16)),
-                          Icon(Icons.keyboard_arrow_down),
-                        ],
-                      ),
-                    ),
+                    // Container(
+                    //   padding: const EdgeInsets.symmetric(horizontal: 16),
+                    //   height: 46,
+                    //   decoration: BoxDecoration(
+                    //     color: Colors.white,
+                    //     borderRadius: BorderRadius.circular(14),
+                    //   ),
+                    //   child: Row(
+                    //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //     children: const [
+                    //       Text("Cash", style: TextStyle(fontSize: 16)),
+                    //       Icon(Icons.keyboard_arrow_down),
+                    //     ],
+                    //   ),
+                    // ),
                   ],
                 ),
               ),
             ),
 
-            /// CHECKOUT TOTAL OTOMATIS
+            /// CHECKOUT AREA
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(color: Colors.white),
               child: Container(
                 height: 55,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4A2B10),
+                  color: Color(0xFF4A2B10),
                   borderRadius: BorderRadius.circular(40),
                 ),
                 child: Row(
@@ -172,11 +176,7 @@ class _CartPageState extends State<CartPage> {
                       padding: EdgeInsets.only(left: 24),
                       child: Text(
                         "Check Out",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: TextStyle(color: Colors.white, fontSize: 18),
                       ),
                     ),
                     const VerticalDivider(color: Colors.white, thickness: 1),
@@ -199,19 +199,15 @@ class _CartPageState extends State<CartPage> {
         ),
       ),
 
-      bottomNavigationBar: CustomBottomNav(
-        currentIndex: currentIndex,
-        onTap: (index) {
-          setState(() {
-            currentIndex = index;
-          });
-        },
-      ),
+      // bottomNavigationBar: CustomBottomNav(
+      //   currentIndex: currentIndex,
+      //   onTap: (index) => setState(() => currentIndex = index),
+      // ),
     );
   }
 }
 
-/// CART ITEM WIDGET
+/// ITEM WIDGET
 class CartItemWidget extends StatelessWidget {
   final CartItem item;
   final Function() onAdd;
@@ -238,7 +234,7 @@ class CartItemWidget extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(14),
-            child: Image.asset(
+            child: Image.network(
               item.image,
               width: 80,
               height: 80,
@@ -247,6 +243,7 @@ class CartItemWidget extends StatelessWidget {
           ),
           const SizedBox(width: 16),
 
+          /// TEXT AREA
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,7 +262,7 @@ class CartItemWidget extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Rp${item.price}",
+                  "Rp${item.price.toInt()}",
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -275,6 +272,7 @@ class CartItemWidget extends StatelessWidget {
             ),
           ),
 
+          /// BUTTONS
           Row(
             children: [
               IconButton(
