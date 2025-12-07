@@ -1,15 +1,15 @@
 import '../../domain/entities/order_entity.dart';
 
-class OrderModel {
+class CreateOrderResponse {
   final int id;
   final String userId;
   final String orderStatus;
   final String paymentStatus;
-  final String midtransOrderId;
+  final String? midtransOrderId;
   final double netIncome;
-  final String paymentLink;
+  final String? paymentLink;
 
-  OrderModel({
+  CreateOrderResponse({
     required this.id,
     required this.userId,
     required this.orderStatus,
@@ -19,15 +19,15 @@ class OrderModel {
     required this.paymentLink,
   });
 
-  factory OrderModel.fromJson(Map<String, dynamic> json) {
-    return OrderModel(
+  factory CreateOrderResponse.fromJson(Map<String, dynamic> json) {
+    return CreateOrderResponse(
       id: json['id'],
       userId: json['user_id'],
       orderStatus: json['order_status'],
       paymentStatus: json['payment_status'],
-      midtransOrderId: json['midtrans_order_id'],
-      netIncome: (json['net_income'] as num).toDouble(),
-      paymentLink: json['payment_link'],
+      midtransOrderId: json['midtrans_order_id'] as String?,
+      netIncome: json['net_income']?.toDouble(),
+      paymentLink: json['payment_link'] as String?,
     );
   }
 
@@ -37,9 +37,9 @@ class OrderModel {
       userId: userId,
       orderStatus: orderStatus,
       paymentStatus: paymentStatus,
-      midtransOrderId: midtransOrderId,
+      midtransOrderId: midtransOrderId ?? '',
       netIncome: netIncome,
-      paymentLink: paymentLink,
+      paymentLink: paymentLink ?? '',
     );
   }
 }

@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/datasources/order_datasource.dart';
 import '../../domain/entities/order_entity.dart';
 
-
 // Model data untuk setiap pesanan
 class OrderStatusPage extends StatefulWidget {
   const OrderStatusPage({super.key});
@@ -13,9 +12,11 @@ class OrderStatusPage extends StatefulWidget {
   State<OrderStatusPage> createState() => _OrderStatusPageState();
 }
 
-Future<List<OrderEntity>> _fetchOrderHistory() async{
+Future<List<OrderEntity>> _fetchOrderHistory() async {
   final authUser = Supabase.instance.client.auth.currentUser;
-  final orderHistory = OrderDataSource().getOrdersByUserId(authUser!.id);
+  final orderHistory = OrderDatasource(
+    Supabase.instance.client,
+  ).getOrdersByUserId(authUser!.id);
   return orderHistory;
 }
 
@@ -30,7 +31,11 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
         centerTitle: false,
         title: const Text(
           "Order Status",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 30),
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 30,
+          ),
         ),
         leading: Padding(
           padding: const EdgeInsets.only(left: 20.0),
@@ -44,7 +49,11 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
               ),
               child: IconButton(
                 padding: EdgeInsets.zero,
-                icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: () {
                   Navigator.pop(context);
                 },
