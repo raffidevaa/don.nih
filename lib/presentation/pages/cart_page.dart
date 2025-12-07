@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
-import '../widgets/custom_bottom_nav.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/datasources/storage_datasource.dart';
 import '../../data/datasources/cart_datasource.dart';
-import '../../data/models/cart_item_response.dart';
+import '../../data/models/create_order_request.dart';
+import '../../data/datasources/order_datasource.dart';
 
 /// UI MODEL
 class CartItem {
+  int cartId;
   String image;
   String title;
   String subtitle;
   double price;
   int quantity;
+  int menuToppingId;
 
   CartItem({
+    required this.cartId,
     required this.image,
     required this.title,
     required this.subtitle,
     required this.price,
     required this.quantity,
+    required this.menuToppingId,
   });
 }
 
@@ -33,10 +37,11 @@ class _CartPageState extends State<CartPage> {
   final SupabaseClient supabase = Supabase.instance.client;
   final StorageDatasource storage = StorageDatasource();
   final CartDatasource cartDatasource = CartDatasource();
-  int currentIndex = 2;
+  bool loading = true;
+  bool checkoutLoading = false;
 
   List<CartItem> cartItems = [];
-  bool loading = true;
+  int currentIndex = 2;
 
   @override
   void initState() {
@@ -52,18 +57,19 @@ class _CartPageState extends State<CartPage> {
 
       final response = await cartDatasource.getCartItems(userId);
 
-      /// Convert backend model -> UI model
       cartItems = response.map((r) {
         return CartItem(
+          cartId: r.cartId,
           image: r.menuImage,
           title: r.menuName,
           subtitle: r.toppings.isEmpty ? "—" : r.toppings.join(", "),
           price: r.baseTotal,
-          quantity: 1, // quantity hanya dipakai saat create order
+          quantity: 1,
+          menuToppingId: r.menuToppingId,
         );
       }).toList();
     } catch (e) {
-      print("Error loading cart: $e");
+      throw ("Error loading cart: $e");
     }
 
     setState(() => loading = false);
@@ -71,16 +77,74 @@ class _CartPageState extends State<CartPage> {
 
   /// TOTAL HARGA
   double get totalPrice {
-    double sum = 0;
-    for (var item in cartItems) {
-      sum += item.price * item.quantity;
-    }
-    return sum;
+    return cartItems.fold(
+      0.0,
+      (sum, item) => sum + (item.price * item.quantity),
+    );
   }
 
   /// FORMAT RUPIAH
   String rupiah(num number) {
     return "Rp${number.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => "${m[1]}.")}";
+  }
+
+  /// CHECKOUT FUNCTION
+  Future<void> handleCheckout() async {
+    final authUser = supabase.auth.currentUser;
+    final String userId =
+        authUser?.id ?? "00000000-0000-0000-0000-000000000000";
+
+    if (cartItems.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Keranjang masih kosong")));
+      return;
+    }
+
+    setState(() => checkoutLoading = true);
+
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Silakan login terlebih dahulu")),
+      );
+      setState(() => checkoutLoading = false);
+      return;
+    }
+
+    final items = cartItems.map((item) {
+      return {
+        "menu_topping_id": item.menuToppingId,
+        "quantity": item.quantity,
+        "price": item.price,
+      };
+    }).toList();
+
+    final request = CreateOrderRequest(userId: userId, items: items);
+
+    final datasource = OrderDatasource(Supabase.instance.client);
+
+    try {
+      await datasource.createOrder(request);
+
+      final cartIds = cartItems.map((c) => c.cartId).toList();
+      await cartDatasource.markCartAsPurchased(cartIds);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Order berhasil dibuat")));
+
+      /// Option: hapus isi cart setelah checkout
+      setState(() {
+        cartItems.clear();
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Checkout gagal: $e")));
+    } finally {
+      setState(() => checkoutLoading = false);
+    }
   }
 
   @override
@@ -112,7 +176,6 @@ class _CartPageState extends State<CartPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    /// CART LOOP
                     for (int i = 0; i < cartItems.length; i++)
                       CartItemWidget(
                         item: cartItems[i],
@@ -129,66 +192,38 @@ class _CartPageState extends State<CartPage> {
                       ),
 
                     const SizedBox(height: 30),
-
-                    // const Text(
-                    //   "Payment Method",
-                    //   style: TextStyle(
-                    //     fontSize: 18,
-                    //     fontWeight: FontWeight.bold,
-                    //   ),
-                    // ),
-                    // const SizedBox(height: 8),
-
-                    // Container(
-                    //   padding: const EdgeInsets.symmetric(horizontal: 16),
-                    //   height: 46,
-                    //   decoration: BoxDecoration(
-                    //     color: Colors.white,
-                    //     borderRadius: BorderRadius.circular(14),
-                    //   ),
-                    //   child: Row(
-                    //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    //     children: const [
-                    //       Text("Cash", style: TextStyle(fontSize: 16)),
-                    //       Icon(Icons.keyboard_arrow_down),
-                    //     ],
-                    //   ),
-                    // ),
                   ],
                 ),
               ),
             ),
 
-            /// CHECKOUT AREA
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(color: Colors.white),
+            /// CHECKOUT BUTTON
+            GestureDetector(
+              onTap: checkoutLoading ? null : handleCheckout,
               child: Container(
+                margin: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
                 height: 55,
                 decoration: BoxDecoration(
-                  color: Color(0xFF4A2B10),
+                  color: checkoutLoading
+                      ? Colors.brown.shade200
+                      : const Color(0xFF4A2B10),
                   borderRadius: BorderRadius.circular(40),
                 ),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.only(left: 24),
-                      child: Text(
-                        "Check Out",
-                        style: TextStyle(color: Colors.white, fontSize: 18),
-                      ),
+                    Text(
+                      checkoutLoading ? "Processing..." : "Check Out",
+                      style: const TextStyle(color: Colors.white, fontSize: 18),
                     ),
                     const VerticalDivider(color: Colors.white, thickness: 1),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 24),
-                      child: Text(
-                        rupiah(totalPrice),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    Text(
+                      rupiah(totalPrice),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
@@ -198,16 +233,11 @@ class _CartPageState extends State<CartPage> {
           ],
         ),
       ),
-
-      // bottomNavigationBar: CustomBottomNav(
-      //   currentIndex: currentIndex,
-      //   onTap: (index) => setState(() => currentIndex = index),
-      // ),
     );
   }
 }
 
-/// ITEM WIDGET
+/// ITEM CARD
 class CartItemWidget extends StatelessWidget {
   final CartItem item;
   final Function() onAdd;
@@ -243,7 +273,7 @@ class CartItemWidget extends StatelessWidget {
           ),
           const SizedBox(width: 16),
 
-          /// TEXT AREA
+          /// TEXT
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

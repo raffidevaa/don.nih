@@ -118,10 +118,20 @@ class CartDatasource {
           menuImage: imageUrl,
           toppings: toppingNames,
           baseTotal: (c['total'] as num).toDouble(),
+          menuToppingId: c['menu_topping_id'],
         ),
       );
     }
 
     return results;
+  }
+
+  Future<void> markCartAsPurchased(List<int> cartIds) async {
+    if (cartIds.isEmpty) return;
+
+    await supabase
+        .from('carts')
+        .update({'is_purchased': true})
+        .inFilter('id', cartIds);
   }
 }

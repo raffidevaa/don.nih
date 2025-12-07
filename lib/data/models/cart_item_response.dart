@@ -4,6 +4,7 @@ class CartItemResponse {
   final String menuImage;
   final List<String> toppings;
   final double baseTotal;
+  final int menuToppingId;
 
   CartItemResponse({
     required this.cartId,
@@ -11,5 +12,6 @@ class CartItemResponse {
     required this.menuImage,
     required this.toppings,
     required this.baseTotal,
+    required this.menuToppingId,
   });
 }
