@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/create_order_request.dart';
 import '../models/create_order_response.dart';
 import '../../domain/entities/order_entity.dart';
+import '../models/order_response.dart';
 
 class OrderDatasource {
   final SupabaseClient supabase;
@@ -70,5 +71,19 @@ class OrderDatasource {
       netIncome: entity.netIncome,
       paymentLink: entity.paymentLink,
     );
+  }
+
+  Future<List<OrderEntity>> getOrdersByUserId(String userId) async {
+    final response = await supabase
+        .from('orders')
+        .select()
+        .eq('user_id', userId)
+        .order('id', ascending: false);
+
+    if (response.isEmpty) return [];
+
+    return response
+        .map((json) => OrderModel.fromJson(json).toEntity())
+        .toList();
   }
 }
