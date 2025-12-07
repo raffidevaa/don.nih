@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> {
   late StorageDatasource _storageDataSource;
 
   List<MenuModel> _menus = [];
-  Map<int, String?> _menuImages = {}; // menuId -> URL Storage
+  final Map<int, String?> _menuImages = {}; // menuId -> URL Storage
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -96,7 +96,7 @@ class _HomePageState extends State<HomePage> {
       // Ambil URL gambar dari Storage untuk tiap menu
       for (var menu in menus) {
         try {
-          final url = await _storageDataSource.getImageUrl(
+          final url = _storageDataSource.getImageUrl(
             id: menu.id.toString(),
             folderName: "menu",
             fileType: "png",
@@ -123,31 +123,36 @@ class _HomePageState extends State<HomePage> {
         name.contains('latte') ||
         name.contains('cappuccino') ||
         name.contains('mocha') ||
-        name.contains('coffee'))
+        name.contains('coffee')) {
       return 'COFFEE';
+    }
     if (name.contains('tea') ||
         name.contains('matcha') ||
         name.contains('chocolate') ||
-        name.contains('milk'))
+        name.contains('milk')) {
       return 'NON-COFFEE';
+    }
     if (name.contains('pancake') ||
         name.contains('cake') ||
         name.contains('waffle') ||
         name.contains('ice cream') ||
-        name.contains('pudding'))
+        name.contains('pudding')) {
       return 'DESSERT';
+    }
     if (name.contains('toast') ||
         name.contains('egg') ||
         name.contains('sandwich') ||
-        name.contains('croissant'))
+        name.contains('croissant')) {
       return 'BREAKFAST';
+    }
     if (name.contains('curry') ||
         name.contains('rice') ||
         name.contains('pasta') ||
         name.contains('noodle') ||
         name.contains('chicken') ||
-        name.contains('beef'))
+        name.contains('beef')) {
       return 'MEAL';
+    }
     return 'COFFEE';
   }
 

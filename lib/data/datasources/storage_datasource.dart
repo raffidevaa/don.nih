@@ -12,7 +12,7 @@ class StorageDatasource {
     required File file,
   }) {
     final String extension = file.path.split('.').last;
-    return '$id\_$folderName.$extension';
+    return '${id}_$folderName.$extension';
   }
 
   /// Upload file baru
@@ -78,7 +78,7 @@ class StorageDatasource {
     required String fileType, // png/jpg/webp dll
   }) async {
     try {
-      final fileName = '$id\_$folderName.$fileType';
+      final fileName = '${id}_$folderName.$fileType';
 
       final files = await supabase.storage
           .from(bucketName)
@@ -96,7 +96,7 @@ class StorageDatasource {
     required String folderName,
     required String fileType,
   }) {
-    final fileName = '$id\_$folderName.$fileType';
+    final fileName = '${id}_$folderName.$fileType';
     return supabase.storage
         .from(bucketName)
         .getPublicUrl('$folderName/$fileName');
