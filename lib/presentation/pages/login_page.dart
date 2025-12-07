@@ -156,8 +156,9 @@ class _LoginPageState extends State<LoginPage> {
                                             .trim(),
                                       );
 
-                                  if (response.user == null)
+                                  if (response.user == null) {
                                     throw Exception("Login gagal");
+                                  }
 
                                   // 🔥 Ambil profile dari tabel users
                                   final profile = await Supabase.instance.client

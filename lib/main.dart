@@ -1,5 +1,10 @@
-import 'package:donnih/presentation/pages/profile_page.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
+
+// --- IMPORT HALAMAN ---
+import 'presentation/pages/profile_page.dart';
 import 'presentation/pages/order_status.dart';
 import 'presentation/pages/menu_detail.dart';
 import 'presentation/pages/cart_page.dart';
@@ -8,23 +13,15 @@ import 'presentation/pages/homepage.dart';
 import 'presentation/pages/favourites_page.dart';
 import 'presentation/pages/sign_up_page.dart';
 import 'presentation/pages/login_page.dart';
-import 'presentation/pages/admin_order_status.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_web_plugins/url_strategy.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await dotenv.load();
-
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
-
   usePathUrlStrategy();
-
   runApp(const MainApp());
 }
 
@@ -35,18 +32,19 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: '/',
+      title: 'Aplikasi Don.Nih',
+      initialRoute: '/debug', 
       routes: {
         '/': (context) => const LoadingScreen(),
+        '/debug': (context) => const AllPage(),
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignUpPage(),
-        '/home': (context) => const HomePage(),
+        '/home': (context) => const HomePage(initialIndex: 0),
         '/order-status': (context) => const OrderStatusPage(),
         '/menu-detail': (context) => const MenuDetailPage(),
         '/cart': (context) => const CartPage(),
         '/favourites': (context) => const FavouritesPage(),
         '/profile': (context) => const ProfilePage(),
-        '/admin-order-status': (context) => const AdminOrderStatusPage(),
       },
     );
   }
@@ -58,134 +56,26 @@ class AllPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Aplikasi Don.Nih")),
+      appBar: AppBar(title: const Text("Menu Debugging Dev")),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Tombol lama
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const OrderStatusPage(),
-                  ),
-                );
-              },
-              child: const Text('Lihat Status Pesanan'),
-            ),
-
-            const SizedBox(height: 20),
-
-            //MenuDetailPage
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MenuDetailPage(),
-                  ),
-                );
-              },
-              child: const Text('Buka Menu Detail'),
-            ),
-
-            const SizedBox(height: 20),
-
-            //SignUpPage
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SignUpPage()),
-                );
-              },
-              child: const Text('Buka Sign Up Page'),
-            ),
-            const SizedBox(height: 20),
-
-            //LoginPage
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              },
-              child: const Text('Buka Login Page'),
-            ),
-            const SizedBox(height: 20),
-
-            // CartPage
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CartPage()),
-                );
-              },
-              child: const Text('Buka Cart Page'),
-            ),
-
-            const SizedBox(height: 20),
-
-            //FavouritesPage
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HomePage(initialIndex: 1),
-                  ),
-                );
-              },
-              child: const Text('Buka Favourites Page'),
-            ),
-            const SizedBox(height: 20),
-
-            //ProfilePage
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HomePage(initialIndex: 3),
-                  ),
-                );
-              },
-              child: const Text('Buka Profile'),
-            ),
-            const SizedBox(height: 20),
-
-            // LoadingScreen
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LoadingScreen(),
-                  ),
-                );
-              },
-              child: const Text('Buka Loading Screen'),
-            ),
-
-            const SizedBox(height: 20),
-
-            // New Home Page
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
-                );
-              },
-              child: const Text('Buka Home Page'),
-            ),
-
-            const SizedBox(height: 20),
-          ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text("Klik tombol untuk tes URL berubah:"),
+              const SizedBox(height: 20),
+              ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/login'), child: const Text('Ke Login (/login)')),
+              const SizedBox(height: 10),
+              ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/home'), child: const Text('Ke Home (/home)')),
+              const SizedBox(height: 10),
+              ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/favourites'), child: const Text('Ke Favorites (/favourites)')),
+              const SizedBox(height: 10),
+              ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/profile'), child: const Text('Ke Profile (/profile)')),
+              const SizedBox(height: 10),
+              ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/cart'), child: const Text('Ke Cart (/cart)')),
+            ],
+          ),
         ),
       ),
     );
