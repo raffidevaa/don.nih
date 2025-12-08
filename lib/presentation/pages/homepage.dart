@@ -167,12 +167,25 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // --- REVISI 2: NAVIGASI URL AKTIF ---
+  // Saat tab diklik, kita ganti Route (halaman) supaya URL di browser berubah
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    // Selalu refresh favorite setiap kali ganti tab, biar sinkron
-    _fetchUserFavorites(); 
+    if (index == _selectedIndex) return;
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacementNamed(context, '/home');
+        break;
+      case 1:
+        Navigator.pushReplacementNamed(context, '/favourites');
+        break;
+      case 2:
+        Navigator.pushReplacementNamed(context, '/cart');
+        break;
+      case 3:
+        Navigator.pushReplacementNamed(context, '/profile');
+        break;
+    }
   }
 
   @override
@@ -336,7 +349,7 @@ class _ProductCardState extends State<ProductCard> {
     final user = supabase.auth.currentUser;
 
     if (user == null) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Login dulu bos!')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
       return;
     }
 
@@ -350,8 +363,20 @@ class _ProductCardState extends State<ProductCard> {
           'menu_id': widget.menuId,
           'user_id': user.id,
         });
+        // Tambahkan SnackBar saat berhasil menambah ke favorit
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ditambahkan ke Favorite ❤️'), duration: Duration(seconds: 1)),
+          );
+        }
       } else {
         await supabase.from('favorites').delete().eq('user_id', user.id).eq('menu_id', widget.menuId);
+        // Tambahkan SnackBar saat berhasil menghapus dari favorit
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dihapus dari Favorite'), duration: Duration(seconds: 1)),
+          );
+        }
       }
       
       // PENTING: Beritahu Homepage bahwa data berubah!
@@ -360,6 +385,11 @@ class _ProductCardState extends State<ProductCard> {
     } catch (e) {
       setState(() => isFavorite = !isFavorite); // Revert kalau error
       print("Error toggle: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal: $e')),
+        );
+      }
     }
   }
 
@@ -385,12 +415,15 @@ class _ProductCardState extends State<ProductCard> {
             Expanded(
               child: Stack(
                 children: [
+                  // --- REVISI 1: GAMBAR HOMEPAGE ROUNDED SEMUA SISI ---
                   ClipRRect(
-                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
+                    // Ubah dari only(top...) jadi circular(15) agar rounded semua sisi
+                    borderRadius: BorderRadius.circular(15), 
                     child: widget.imageUrl != null
                         ? Image.network(widget.imageUrl!, width: double.infinity, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.image)))
                         : Image.asset('assets/images/caffelatte.png', width: double.infinity, fit: BoxFit.cover),
                   ),
+                  // ----------------------------------------------------
                   Positioned(
                     top: 8, right: 8,
                     child: GestureDetector(

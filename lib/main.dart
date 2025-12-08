@@ -1,3 +1,4 @@
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -33,6 +34,11 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Aplikasi Don.Nih',
+
+      theme: ThemeData(
+        textTheme: GoogleFonts.poppinsTextTheme(),
+      ),
+        
       initialRoute: '/debug', 
       routes: {
         '/': (context) => const LoadingScreen(),
@@ -42,9 +48,9 @@ class MainApp extends StatelessWidget {
         '/home': (context) => const HomePage(initialIndex: 0),
         '/order-status': (context) => const OrderStatusPage(),
         '/menu-detail': (context) => const MenuDetailPage(),
-        '/cart': (context) => const CartPage(),
-        '/favourites': (context) => const FavouritesPage(),
-        '/profile': (context) => const ProfilePage(),
+        '/cart': (context) => const HomePage(initialIndex: 2),
+        '/favourites': (context) => const HomePage(initialIndex: 1),
+        '/profile': (context) => const HomePage(initialIndex: 3),
       },
     );
   }

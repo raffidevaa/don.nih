@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart'; 
 
 // --- WARNA TEMA ---
 const Color kGoldColor = Color(0xFF8B6F47);
 const Color kDarkBrown = Color(0xFF5c3d2e);
-const Color kSoftCream = Color(0xFFFAF3EE);
 const Color kGreyText = Color(0xFF9E9E9E);
 
 class ProfilePage extends StatefulWidget {
@@ -15,12 +15,17 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  // Variabel untuk menampung data profil
+  // Variabel Data User
   String _fullName = "Loading...";
   String _username = "Loading...";
   String _email = "";
   String _phone = "-";
+  String? _avatarUrl;
+  
   bool _isLoading = true;
+  bool _isUploading = false;
+
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -28,26 +33,19 @@ class _ProfilePageState extends State<ProfilePage> {
     _getProfileData();
   }
 
-  // --- 1. ENDPOINT GET PROFILE ---
+  // --- 1. AMBIL DATA PROFILE ---
   Future<void> _getProfileData() async {
     try {
       final supabase = Supabase.instance.client;
       final user = supabase.auth.currentUser;
 
       if (user == null) {
-        // Kalau user belum login (Guest)
-        setState(() {
-          _fullName = "Guest User";
-          _username = "guest";
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
         return;
       }
 
-      // Simpan email dari auth (karena email ada di auth, bukan tabel users biasanya)
       _email = user.email ?? "";
 
-      // Ambil data detail dari tabel 'users' berdasarkan ID login
       final data = await supabase
           .from('users')
           .select()
@@ -56,213 +54,295 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (mounted) {
         setState(() {
-          // Ambil data, kalau null kasih strip (-)
           _fullName = data?['fullname'] ?? "No Name";
-          _username = data?['username'] ?? _email.split('@')[0]; // Fallback ke nama depan email
+          _username = data?['username'] ?? "User";
           _phone = data?['phone_number'] ?? "-";
+          _avatarUrl = data?['avatar_url'];
           _isLoading = false;
         });
       }
     } catch (e) {
-      print("Error fetch profile: $e");
+      print("Error fetch: $e");
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // --- 2. UPLOAD & GANTI FOTO ---
+  Future<void> _uploadPhoto() async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image == null) return;
+
+      setState(() => _isUploading = true);
+
+      final imageBytes = await image.readAsBytes();
+      final fileExt = image.name.split('.').last;
+      final fileName = '${user.id}/${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+
+      await supabase.storage.from('avatars').uploadBinary(
+        fileName,
+        imageBytes,
+        fileOptions: const FileOptions(upsert: true, contentType: 'image/jpeg'),
+      );
+
+      final imageUrl = supabase.storage.from('avatars').getPublicUrl(fileName);
+
+      await supabase.from('users').update({
+        'avatar_url': imageUrl
+      }).eq('id', user.id);
+
+      setState(() {
+        _avatarUrl = imageUrl;
+        _isUploading = false;
+      });
+
       if (mounted) {
-        setState(() {
-          _fullName = "Error Loading";
-          _isLoading = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Foto profil berhasil diupdate!")),
+        );
+      }
+
+    } catch (e) {
+      print("Upload error: $e");
+      setState(() => _isUploading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Gagal upload: $e")),
+        );
       }
     }
   }
 
-  // --- 2. FUNGSI LOGOUT ---
-  Future<void> _signOut() async {
+  // --- 3. EDIT NAMA / HP (DIALOG) ---
+  Future<void> _showEditDialog(String fieldName, String currentValue, String dbColumn) async {
+    final TextEditingController controller = TextEditingController(text: currentValue);
+    
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Edit $fieldName"),
+          content: TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              hintText: "Masukkan $fieldName baru",
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Batal", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _updateProfile(dbColumn, controller.text);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kDarkBrown,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text("Simpan"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Fungsi Update Data ke Supabase
+  Future<void> _updateProfile(String column, String value) async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
     try {
-      await Supabase.instance.client.auth.signOut();
+      await supabase.from('users').update({
+        column: value
+      }).eq('id', user.id);
+
+      setState(() {
+        if (column == 'fullname') _fullName = value;
+        if (column == 'phone_number') _phone = value;
+      });
+
       if (mounted) {
-        // Kembali ke halaman Login dan hapus semua history halaman sebelumnya
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Data berhasil diperbarui!")),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Gagal Logout: $e")),
+        SnackBar(content: Text("Gagal update: $e")),
       );
+    }
+  }
+
+  Future<void> _signOut() async {
+    await Supabase.instance.client.auth.signOut();
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.grey[50], 
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: kDarkBrown))
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  Stack(
-                    alignment: Alignment.topCenter,
-                    clipBehavior: Clip.none,
+          : SafeArea( 
+              child: SingleChildScrollView(
+                child: Center( 
+                  child: Column(
                     children: [
-                      // Background Cream Melengkung
-                      Container(
-                        height: 400,
-                        width: double.infinity,
-                        decoration: const BoxDecoration(
-                          color: kSoftCream,
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(50),
-                            bottomRight: Radius.circular(50),
-                          ),
+                      const SizedBox(height: 30), 
+
+                      // 1. JUDUL
+                      const Text(
+                        'My Profile',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: kDarkBrown,
                         ),
                       ),
 
-                      // Judul My Profile
-                      const SafeArea(
-                        child: Padding(
-                          padding: EdgeInsets.only(top: 40),
-                          child: Text(
-                            'My Profile',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: kDarkBrown,
+                      const SizedBox(height: 40),
+
+                      // 2. AVATAR SECTION
+                      Stack(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: kDarkBrown.withOpacity(0.15),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
                             ),
-                          ),
-                        ),
-                      ),
-
-                      // Foto Profil
-                      Positioned(
-                        top: 120,
-                        child: Stack(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: kDarkBrown.withOpacity(0.15),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 8),
+                            child: _isUploading
+                                ? const CircleAvatar(
+                                    radius: 65,
+                                    backgroundColor: Colors.grey,
+                                    child: CircularProgressIndicator(color: Colors.white),
+                                  )
+                                : CircleAvatar(
+                                    radius: 65,
+                                    backgroundColor: Colors.grey[200],
+                                    backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
+                                        ? NetworkImage(_avatarUrl!) as ImageProvider
+                                        : const AssetImage('assets/images/espresso.png'),
                                   ),
-                                ],
-                              ),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: kGoldColor, width: 2),
-                                ),
-                                child: const CircleAvatar(
-                                  radius: 65,
-                                  // Sementara masih pakai asset statis
-                                  backgroundImage: AssetImage('assets/images/espresso.png'),
-                                ),
-                              ),
-                            ),
-                            // Tombol Edit Kecil
-                            Positioned(
-                              bottom: 5,
-                              right: 5,
+                          ),
+                          // Tombol Edit Foto
+                          Positioned(
+                            bottom: 5,
+                            right: 5,
+                            child: GestureDetector(
+                              onTap: _uploadPhoto,
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: const BoxDecoration(
                                   color: kDarkBrown,
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.edit, color: Colors.white, size: 16),
+                                child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
 
-                      // Nama & Role (DATA DARI SUPABASE)
-                      Positioned(
-                        top: 285,
+                      const SizedBox(height: 20),
+
+                      // 3. NAMA & USERNAME
+                      Text(
+                        _fullName,
+                        style: const TextStyle(
+                            fontSize: 26, fontWeight: FontWeight.bold, color: kDarkBrown),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        "@$_username",
+                        style: const TextStyle(
+                            fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w500),
+                      ),
+
+                      const SizedBox(height: 50), // Spasi sebelum form
+
+                      // 4. FORM FIELDS
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            _buildLabel("Email"),
+                            _buildField(Icons.alternate_email_rounded, _email, isEditable: false),
+
+                            const SizedBox(height: 20),
+
+                            _buildLabel("Full Name"),
+                            _buildField(
+                              Icons.person_outline_rounded, 
                               _fullName, 
-                              style: const TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: kDarkBrown,
+                              isEditable: true,
+                              onTap: () => _showEditDialog("Full Name", _fullName, 'fullname'),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            _buildLabel("Phone Number"),
+                            _buildField(
+                              Icons.phone_iphone_rounded, 
+                              _phone, 
+                              isEditable: true,
+                              onTap: () => _showEditDialog("Phone Number", _phone, 'phone_number'),
+                            ),
+
+                            const SizedBox(height: 40),
+
+                            // LOGOUT
+                            Center(
+                              child: SizedBox(
+                                width: 200, height: 52,
+                                child: ElevatedButton(
+                                  onPressed: _signOut,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: kDarkBrown,
+                                    foregroundColor: Colors.white,
+                                    elevation: 5,
+                                    shadowColor: kDarkBrown.withOpacity(0.4),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(Icons.logout_rounded, size: 20),
+                                      SizedBox(width: 10),
+                                      Text("Log Out", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 5),
-                            Text(
-                              "@$_username",
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.black54,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                            const SizedBox(height: 40),
                           ],
                         ),
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 30),
-
-                  // Form Fields (DATA DARI SUPABASE)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel("Email"),
-                        _buildPremiumField(Icons.alternate_email_rounded, _email),
-
-                        const SizedBox(height: 20),
-
-                        _buildLabel("Full Name"),
-                        _buildPremiumField(Icons.person_outline_rounded, _fullName),
-
-                        const SizedBox(height: 20),
-
-                        _buildLabel("Phone Number"),
-                        _buildPremiumField(Icons.phone_iphone_rounded, _phone),
-
-                        const SizedBox(height: 40),
-
-                        // Tombol Logout (SUDAH AKTIF)
-                        Center(
-                          child: SizedBox(
-                            width: 200,
-                            height: 52,
-                            child: ElevatedButton(
-                              onPressed: _signOut, // <--- Panggil fungsi Logout
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: kDarkBrown,
-                                foregroundColor: Colors.white,
-                                elevation: 5,
-                                shadowColor: kDarkBrown.withOpacity(0.4),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Icon(Icons.logout_rounded, size: 20),
-                                  SizedBox(width: 10),
-                                  Text(
-                                    "Log Out",
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 40),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
     );
@@ -271,18 +351,11 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(left: 12, bottom: 8),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: kGreyText,
-        ),
-      ),
+      child: Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: kGreyText)),
     );
   }
 
-  Widget _buildPremiumField(IconData icon, String value) {
+  Widget _buildField(IconData icon, String value, {required bool isEditable, VoidCallback? onTap}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
@@ -290,11 +363,7 @@ class _ProfilePageState extends State<ProfilePage> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey[300]!, width: 1),
         boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+          BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Row(
@@ -306,14 +375,15 @@ class _ProfilePageState extends State<ProfilePage> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+              maxLines: 1, overflow: TextOverflow.ellipsis,
             ),
           ),
-          Icon(Icons.lock_outline_rounded, color: Colors.grey[400], size: 18),
+          if (isEditable)
+            GestureDetector(
+              onTap: onTap,
+              child: const Icon(Icons.edit, color: kGoldColor, size: 20),
+            ),
         ],
       ),
     );
