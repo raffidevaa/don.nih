@@ -1,8 +1,8 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/create_order_request.dart';
-import '../models/create_order_response.dart';
-import '../../domain/entities/order_entity.dart';
-import '../models/order_response.dart';
+    import 'package:supabase_flutter/supabase_flutter.dart';
+    import '../models/create_order_request.dart';
+    import '../models/create_order_response.dart';
+    import '../../domain/entities/order_entity.dart';
+    import '../models/order_response.dart';
 
 class OrderDatasource {
   final SupabaseClient supabase;
@@ -86,4 +86,15 @@ class OrderDatasource {
         .map((json) => OrderModel.fromJson(json).toEntity())
         .toList();
   }
+
+  Future<String> getOrderStatusByOrderId(int orderId) async {
+    final response = await supabase
+        .from('orders')
+        .select('order_status')
+        .eq('id', orderId)
+        .single();
+
+    return response['order_status'];
+  }
+
 }

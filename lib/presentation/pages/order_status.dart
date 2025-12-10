@@ -101,12 +101,13 @@ class OrderStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 2. Menambahkan GestureDetector untuk navigasi
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const OrderDetailPage()),
+          MaterialPageRoute(
+            builder: (context) => OrderDetailPage(orderId: order.id),
+          ),
         );
       },
       child: Padding(
@@ -134,7 +135,6 @@ class OrderStatusCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Rp${order.netIncome}',
-                    // 3. Warna diperbaiki
                     style: const TextStyle(color: Colors.grey, fontSize: 14),
                   ),
                   const SizedBox(height: 8),
@@ -152,7 +152,6 @@ class OrderStatusCard extends StatelessWidget {
                 width: 35,
                 height: 35,
                 decoration: const BoxDecoration(
-                  // 3. Warna diperbaiki
                   color: Color(0xFF6F4E37),
                   shape: BoxShape.circle,
                 ),

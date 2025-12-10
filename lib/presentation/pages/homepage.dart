@@ -6,6 +6,7 @@ import 'favourites_page.dart';
 import 'profile_page.dart';
 import 'cart_page.dart';
 import 'menu_detail.dart';
+import 'order_status.dart';
 
 import '../../data/datasources/menu_datasource.dart';
 import '../../data/models/menu_model.dart';
@@ -163,6 +164,7 @@ class _HomePageState extends State<HomePage> {
       case 1: return const FavouritesPage();
       case 2: return const CartPage();
       case 3: return const ProfilePage();
+      case 4: return const OrderStatusPage();
       default: return _buildOriginalHomeUI();
     }
   }
@@ -184,6 +186,9 @@ class _HomePageState extends State<HomePage> {
         break;
       case 3:
         Navigator.pushReplacementNamed(context, '/profile');
+        break;
+      case 4:
+        Navigator.pushReplacementNamed(context, '/order-status');
         break;
     }
   }
