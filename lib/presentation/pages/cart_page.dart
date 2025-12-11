@@ -167,15 +167,29 @@ class _CartPageState extends State<CartPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Your Cart",
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Your Cart",
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.pushNamed(
+                            context,
+                            '/order-status',
+                          ),
+                          child: Image.asset(
+                              'assets/images/orderhistory.png',
+                              width: 28,
+                              height: 28,),
+                          ),
+                        ],
                       ),
-                    ),
                     const SizedBox(height: 20),
-
                     for (int i = 0; i < cartItems.length; i++)
                       CartItemWidget(
                         item: cartItems[i],
@@ -190,7 +204,6 @@ class _CartPageState extends State<CartPage> {
                           });
                         },
                       ),
-
                     const SizedBox(height: 30),
                   ],
                 ),

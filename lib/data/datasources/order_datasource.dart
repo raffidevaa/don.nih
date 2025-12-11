@@ -1,8 +1,8 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/create_order_request.dart';
-import '../models/create_order_response.dart';
-import '../../domain/entities/order_entity.dart';
-import '../models/order_response.dart';
+    import 'package:supabase_flutter/supabase_flutter.dart';
+    import '../models/create_order_request.dart';
+    import '../models/create_order_response.dart';
+    import '../../domain/entities/order_entity.dart';
+    import '../models/order_response.dart';
 
 class OrderDatasource {
   final SupabaseClient supabase;
@@ -20,6 +20,8 @@ class OrderDatasource {
           'midtrans_order_id': 'NULL', // to be updated later
           'net_income': 0,
           'payment_link': 'NULL', // to be updated later
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String()
         })
         .select()
         .single();
@@ -60,6 +62,8 @@ class OrderDatasource {
       midtransOrderId: updatedOrder['midtrans_order_id'],
       netIncome: updatedOrder['net_income']?.toDouble() ?? 0.0,
       paymentLink: updatedOrder['payment_link'],
+      createdAt: DateTime.parse(updatedOrder['created_at']),
+      updatedAt: DateTime.parse(updatedOrder['updated_at']),
     );
 
     return CreateOrderResponse(
@@ -70,6 +74,8 @@ class OrderDatasource {
       midtransOrderId: entity.midtransOrderId,
       netIncome: entity.netIncome,
       paymentLink: entity.paymentLink,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
     );
   }
 
@@ -86,4 +92,15 @@ class OrderDatasource {
         .map((json) => OrderModel.fromJson(json).toEntity())
         .toList();
   }
+
+  Future<Map<String, dynamic>> getOrderStatusByOrderId(int orderId) async {
+    final response = await supabase
+        .from('orders')
+        .select('order_status, created_at, updated_at')
+        .eq('id', orderId)
+        .single();
+
+    return response;
+  }
+
 }
