@@ -120,7 +120,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   Widget _buildOrderSummaryCard(List<Map<String, dynamic>> orderItems) {
     // Hitung total harga secara dinamis
-    final double total = orderItems.fold(0, (sum, item) => sum + (item['price'] as num));
+    final double total = orderItems.fold(0, (sum, item) => sum + (item['price'] as int) * (item['quantity'] as int));
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -133,6 +133,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         children: [
           ...orderItems.map((item) => _buildOrderItemRow(item)),
           const SizedBox(height: 16),
+          const Divider(height: 1, thickness: 1, color: Colors.black26),
+          const SizedBox(height: 16),
           _buildSummaryRow('Payment Method', 'Cash'), // Masih statis, bisa diambil dari data order jika ada
           const SizedBox(height: 10),
           _buildSummaryRow('Total', 'Rp${total.toStringAsFixed(0)}', isTotal: true),
@@ -142,8 +144,9 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   }
 
   Widget _buildOrderItemRow(Map<String, dynamic> item) {
-    final price = (item['price'] as num).toStringAsFixed(0);
+    final price = (item['price'] as int);
     final quantity = item['quantity'];
+    final totalPrice = price * quantity;
     // Akses nama menu dengan aman
     final menuName = (item['menu_toppings']?['menus']?['name'] as String?) ?? 'Product not found';
 
@@ -157,11 +160,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
               const SizedBox(width: 25),
               Text(menuName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
               const Spacer(),
-              Text("Rp$price", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+              Text("Rp$totalPrice", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
-        const Divider(height: 1, thickness: 1, color: Colors.black26),
       ],
     );
   }
