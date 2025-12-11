@@ -1,6 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/order_detail_response.dart';
-import '../../domain/entities/order_detail_entity.dart';
 
 class OrderDetailDatasource {
   final SupabaseClient supabase;

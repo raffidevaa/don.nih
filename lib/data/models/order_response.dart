@@ -8,6 +8,8 @@ class OrderModel {
   final String midtransOrderId;
   final double netIncome;
   final String paymentLink;
+  final DateTime createdAt;
+  DateTime? updatedAt;
 
   OrderModel({
     required this.id,
@@ -17,6 +19,8 @@ class OrderModel {
     required this.midtransOrderId,
     required this.netIncome,
     required this.paymentLink,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +32,8 @@ class OrderModel {
       midtransOrderId: json['midtrans_order_id'],
       netIncome: (json['net_income'] as num).toDouble(),
       paymentLink: json['payment_link'],
+      createdAt: DateTime.parse(json['created_at']),
+      updatedAt: DateTime.parse(json['updated_at']),
     );
   }
 
@@ -40,6 +46,8 @@ class OrderModel {
       midtransOrderId: midtransOrderId,
       netIncome: netIncome,
       paymentLink: paymentLink,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 }

@@ -8,6 +8,8 @@ class CreateOrderResponse {
   final String? midtransOrderId;
   final double netIncome;
   final String? paymentLink;
+  final DateTime createdAt;
+  DateTime? updatedAt;
 
   CreateOrderResponse({
     required this.id,
@@ -17,6 +19,8 @@ class CreateOrderResponse {
     required this.midtransOrderId,
     required this.netIncome,
     required this.paymentLink,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory CreateOrderResponse.fromJson(Map<String, dynamic> json) {
@@ -28,6 +32,8 @@ class CreateOrderResponse {
       midtransOrderId: json['midtrans_order_id'] as String?,
       netIncome: json['net_income']?.toDouble(),
       paymentLink: json['payment_link'] as String?,
+      createdAt: DateTime.parse(json['created_at']),
+      updatedAt: DateTime.parse(json['updated_at']),
     );
   }
 
@@ -40,6 +46,8 @@ class CreateOrderResponse {
       midtransOrderId: midtransOrderId ?? '',
       netIncome: netIncome,
       paymentLink: paymentLink ?? '',
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 }

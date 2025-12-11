@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../data/datasources/order_detail_datasource.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/datasources/order_datasource.dart';
@@ -6,7 +7,7 @@ import '../../data/datasources/order_datasource.dart';
 // Model untuk menggabungkan data yang diambil untuk UI
 class _OrderDetailViewData {
   final List<Map<String, dynamic>> items;
-  final String status;
+  final Map<String, dynamic> status;
 
   _OrderDetailViewData({required this.items, required this.status});
 }
@@ -42,7 +43,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
     // Ekstrak hasil dengan aman
     final items = results[0] as List<Map<String, dynamic>>;
-    final status = results[1] as String;
+    final status = results[1] as Map<String, dynamic>;
 
     return _OrderDetailViewData(
       items: items,
@@ -76,7 +77,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
             children: [
               _buildOrderSummaryCard(viewData.items),
               const SizedBox(height: 30),
-              _buildStatusTimeline(viewData.status),
+              _buildStatusTimeline(viewData.status['order_status'], viewData.status['created_at'], viewData.status['updated_at']),
             ],
           );
         },
@@ -144,7 +145,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     final price = (item['price'] as num).toStringAsFixed(0);
     final quantity = item['quantity'];
     // Akses nama menu dengan aman
-    final menuName = (item['menus'] as Map<String, dynamic>?)?['name'] ?? 'Product not found';
+    final menuName = (item['menu_toppings']?['menus']?['name'] as String?) ?? 'Product not found';
 
     return Column(
       children: [
@@ -172,17 +173,40 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   // --- TIMELINE YANG DIPERBAIKI ---
 
-  Widget _buildStatusTimeline(String currentStatus) {
-    const allStatuses = ["WAITING", "CONFIRMED", "PROCESSED", "COMPLETED"];
+  Widget _buildStatusTimeline(
+      String currentStatus,
+      String createdAt,
+      String updatedAt,
+      ) {
+    const statuses = ["WAITING", "CONFIRMED", "PROCESSED", "COMPLETED"];
 
-    int currentIndex = allStatuses.indexOf(currentStatus.toUpperCase());
+    final created = DateTime.parse(createdAt).toLocal();
+    final updated = DateTime.parse(updatedAt).toLocal();
+
+    final createdFmt = DateFormat('yyyy-MM-dd HH:mm').format(created);
+    final updatedFmt = DateFormat('yyyy-MM-dd HH:mm').format(updated);
+
+    final currentIndex = statuses.indexOf(currentStatus.toUpperCase());
+
+    List<String?> timestamps = [];
+
+    for (int i = 0; i < statuses.length; i++) {
+      if (i == 0) {
+        timestamps.add(createdFmt);      // WAITING
+      } else if (i == currentIndex) {
+        timestamps.add(updatedFmt);      // CURRENT STATUS
+      } else {
+        timestamps.add(null);            // NOT REACHED
+      }
+    }
 
     return Column(
-      children: List.generate(allStatuses.length, (index) {
+      children: List.generate(statuses.length, (i) {
         return _StatusTimelineItem(
-          status: allStatuses[index],
-          isCompleted: index <= currentIndex,
-          isLastItem: index == allStatuses.length - 1,
+          status: statuses[i],
+          timeStamp: timestamps[i],
+          isCompleted: i <= currentIndex,
+          isLastItem: i == statuses.length - 1,
         );
       }),
     );
@@ -195,11 +219,13 @@ class _StatusTimelineItem extends StatelessWidget {
   final String status;
   final bool isCompleted;
   final bool isLastItem;
+  final String? timeStamp;
 
   const _StatusTimelineItem({
     required this.status,
     required this.isCompleted,
     required this.isLastItem,
+    required this.timeStamp,
   });
 
   @override
@@ -214,11 +240,6 @@ class _StatusTimelineItem extends StatelessWidget {
     final Color activeColor = const Color(0xFFC89B64);
     final Color inactiveColor = Colors.grey.shade400;
 
-    final Color dotColor = isCompleted ? activeColor : inactiveColor;
-    final Color lineColor = isCompleted ? activeColor : inactiveColor;
-    final Color textColor = isCompleted ? Colors.black : inactiveColor;
-    final FontWeight fontWeight = isCompleted ? FontWeight.bold : FontWeight.w500;
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -226,31 +247,45 @@ class _StatusTimelineItem extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: isCompleted ? activeColor : inactiveColor,
+                shape: BoxShape.circle,
+              ),
               child: const Icon(Icons.check, color: Colors.white, size: 16),
             ),
             if (!isLastItem)
               Container(
                 width: 2,
-                height: 50, // Jarak antar item
-                color: lineColor,
+                height: 50,
+                color: isCompleted ? activeColor : inactiveColor,
               ),
           ],
         ),
         const SizedBox(width: 16),
-        Padding(
-          padding: const EdgeInsets.only(top: 2.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                statusMap[status] ?? status, // Tampilkan status dari map
-                style: TextStyle(fontSize: 18, color: textColor, fontWeight: fontWeight),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              statusMap[status] ?? status,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: isCompleted ? FontWeight.bold : FontWeight.w500,
+                color: isCompleted ? Colors.black : inactiveColor,
               ),
-            ],
-          ),
-        ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              timeStamp ?? "",
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isCompleted ? FontWeight.bold : FontWeight.w500,
+                color: isCompleted ? Colors.black : inactiveColor,
+              ),
+            ),
+          ],
+        )
       ],
     );
   }
 }
+

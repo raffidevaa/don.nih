@@ -6,6 +6,8 @@ class OrderEntity {
   final String midtransOrderId;
   final double netIncome;
   final String paymentLink;
+  final DateTime createdAt;
+  DateTime? updatedAt;
 
   OrderEntity({
     required this.id,
@@ -15,5 +17,7 @@ class OrderEntity {
     required this.midtransOrderId,
     required this.netIncome,
     required this.paymentLink,
+    required this.createdAt,
+    required this.updatedAt,
   });
 }
