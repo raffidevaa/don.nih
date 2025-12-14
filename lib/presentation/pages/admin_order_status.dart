@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 import '../widgets/admin_page_nav.dart';
-import 'admin_order_detail.dart';
+import '../../data/datasources/admin_order_datasource.dart';
+import '../../domain/entities/order_entity.dart';
 
 class AdminOrderStatusPage extends StatefulWidget {
   const AdminOrderStatusPage({super.key});
@@ -11,71 +14,46 @@ class AdminOrderStatusPage extends StatefulWidget {
 
 class _AdminOrderStatusPageState extends State<AdminOrderStatusPage> {
   int _currentIndex = 1; // Order is selected by default
+  late Future<List<OrderEntity>> _ordersFuture;
+  final AdminOrderDatasource _orderDatasource = AdminOrderDatasource(Supabase.instance.client);
 
-  // Sample order data with complete details
-  final List<Map<String, dynamic>> orders = [
-    {
-      'orderNumber': 'Order #005',
-      'price': 'Rp213.000',
-      'status': 'Order Confirmed',
-      'statusLevel': 1,
-      'items': [
-        {'quantity': 2, 'name': 'Cappuccino', 'price': 'Rp58.000'},
-        {'quantity': 1, 'name': 'Peach Tea', 'price': 'Rp18.000'},
-        {'quantity': 1, 'name': 'Americano', 'price': 'Rp23.000'},
-        {'quantity': 2, 'name': 'Strawberry Pancake', 'price': 'Rp72.000'},
-        {'quantity': 1, 'name': 'Japanese Curry', 'price': 'Rp42.000'},
-      ],
-      'paymentMethod': 'Cash',
-    },
-    {
-      'orderNumber': 'Order #004',
-      'price': 'Rp84.000',
-      'status': 'Order Processed',
-      'statusLevel': 2,
-      'items': [
-        {'quantity': 1, 'name': 'Americano', 'price': 'Rp18.000'},
-        {'quantity': 2, 'name': 'Peach Tea', 'price': 'Rp36.000'},
-        {'quantity': 1, 'name': 'Cafe Latte', 'price': 'Rp30.000'},
-      ],
-      'paymentMethod': 'Cash',
-    },
-    {
-      'orderNumber': 'Order #003',
-      'price': 'Rp184.000',
-      'status': 'Order Completed',
-      'statusLevel': 3,
-      'items': [
-        {'quantity': 3, 'name': 'Cappuccino', 'price': 'Rp87.000'},
-        {'quantity': 2, 'name': 'Japanese Curry', 'price': 'Rp84.000'},
-        {'quantity': 1, 'name': 'Apple Tea', 'price': 'Rp13.000'},
-      ],
-      'paymentMethod': 'E-Wallet',
-    },
-    {
-      'orderNumber': 'Order #002',
-      'price': 'Rp96.000',
-      'status': 'Order Completed',
-      'statusLevel': 3,
-      'items': [
-        {'quantity': 2, 'name': 'Strawberry Pancake', 'price': 'Rp72.000'},
-        {'quantity': 1, 'name': 'Espresso', 'price': 'Rp9.000'},
-        {'quantity': 1, 'name': 'Peach Tea', 'price': 'Rp15.000'},
-      ],
-      'paymentMethod': 'Cash',
-    },
-    {
-      'orderNumber': 'Order #001',
-      'price': 'Rp20.000',
-      'status': 'Order Completed',
-      'statusLevel': 3,
-      'items': [
-        {'quantity': 1, 'name': 'Espresso', 'price': 'Rp9.000'},
-        {'quantity': 1, 'name': 'Apple Tea', 'price': 'Rp11.000'},
-      ],
-      'paymentMethod': 'Cash',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+
+  void _loadOrders() {
+    setState(() {
+      _ordersFuture = _orderDatasource.getAllOrders();
+    });
+  }
+
+  String _getStatusText(String status) {
+    switch (status.toUpperCase()) {
+      case 'WAITING':
+        return 'Waiting Confirmation';
+      case 'CONFIRMED':
+        return 'Order Confirmed';
+      case 'PROCESSED':
+        return 'Order Processed';
+      case 'COMPLETED':
+        return 'Order Completed';
+      case 'CANCELLED':
+        return 'Order Cancelled';
+      default:
+        return status;
+    }
+  }
+
+  String _formatPrice(double price) {
+    final formatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    );
+    return formatter.format(price);
+  }
 
   void _onNavTap(int index) {
     setState(() {
@@ -98,20 +76,17 @@ class _AdminOrderStatusPageState extends State<AdminOrderStatusPage> {
     }
   }
 
-  void _navigateToDetail(int orderIndex) {
-    final order = orders[orderIndex];
-    Navigator.push(
+  Future<void> _navigateToDetail(int orderId) async {
+    final result = await Navigator.pushNamed(
       context,
-      MaterialPageRoute(
-        builder: (context) => AdminOrderDetailPage(
-          orderNumber: order['orderNumber'],
-          totalPrice: order['price'],
-          items: List<Map<String, dynamic>>.from(order['items']),
-          paymentMethod: order['paymentMethod'],
-          initialStatus: order['statusLevel'],
-        ),
-      ),
+      '/admin/order-detail',
+      arguments: orderId,
     );
+
+    // Reload orders if status was updated
+    if (result == true) {
+      _loadOrders();
+    }
   }
 
   @override
@@ -122,44 +97,75 @@ class _AdminOrderStatusPageState extends State<AdminOrderStatusPage> {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 35,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title
-                      const Text(
-                        'Order Status',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Plus Jakarta Sans',
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      
-                      // Order List
-                      ...orders.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final order = entry.value;
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 15),
-                          child: _buildOrderCard(
-                            orderNumber: order['orderNumber'],
-                            price: order['price'],
-                            status: order['status'],
-                            onTap: () => _navigateToDetail(index),
+              child: FutureBuilder<List<OrderEntity>>(
+                future: _ordersFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Error: ${snapshot.error}'),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _loadOrders,
+                            child: const Text('Retry'),
                           ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(
+                      child: Text('No orders found'),
+                    );
+                  }
+
+                  final orders = snapshot.data!;
+
+                  return SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 35,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Title
+                          const Text(
+                            'Order Status',
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Lato',
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 15),
+
+                          // Order List
+                          ...orders.map((order) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 15),
+                              child: _buildOrderCard(
+                                orderNumber: 'Order #${order.id.toString().padLeft(3, '0')}',
+                                price: _formatPrice(order.netIncome),
+                                status: _getStatusText(order.orderStatus),
+                                onTap: () => _navigateToDetail(order.id),
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
             // Bottom Navigation
