@@ -57,4 +57,14 @@ class MenuDataSource {
         .update(menu.toJson())
         .eq('id', id);
   }
+    /// ===============================
+  /// TASK 31 — DELETE MENU (ADMIN)
+  /// DELETE /menu/:id
+  /// ===============================
+  Future<void> deleteMenu(int id) async {
+    await supabase
+        .from('menus')
+        .delete()
+        .eq('id', id);
+  }
 }
