@@ -6,19 +6,16 @@ class MenuDataSource {
 
   MenuDataSource(this.supabase);
 
-  /// GET /api/menu - Get all menus
-  /// Menggunakan Supabase CRUD bawaan (bukan edge function)
+  /// GET /menu
   Future<List<MenuModel>> getAllMenu() async {
     final response = await supabase.from('menus').select();
 
-    final List<MenuModel> menus = (response as List)
+    return (response as List)
         .map((json) => MenuModel.fromJson(json))
         .toList();
-
-    return menus;
   }
 
-  /// Get menu by ID
+  /// GET /menu/:id
   Future<MenuModel?> getMenuById(int id) async {
     final response = await supabase
         .from('menus')
@@ -30,8 +27,7 @@ class MenuDataSource {
     return MenuModel.fromJson(response);
   }
 
-  /// Get menu by name and size
-  /// Untuk fetch harga berdasarkan size yang dipilih
+  /// GET /menu?name=&size=
   Future<MenuModel?> getMenuByNameAndSize(String name, String size) async {
     final response = await supabase
         .from('menus')
