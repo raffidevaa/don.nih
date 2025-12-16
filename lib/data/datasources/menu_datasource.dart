@@ -39,4 +39,22 @@ class MenuDataSource {
     if (response == null) return null;
     return MenuModel.fromJson(response);
   }
+
+  /// ===============================
+  /// TASK 29 — CREATE MENU (ADMIN)
+  /// POST /menu
+  /// ===============================
+  Future<void> createMenu(MenuModel menu) async {
+    await supabase.from('menus').insert(menu.toJson());
+  }
+  /// ===============================
+  /// TASK 30 — UPDATE MENU (ADMIN)
+  /// PUT /menu/:id
+  /// ===============================
+  Future<void> updateMenu(int id, MenuModel menu) async {
+    await supabase
+        .from('menus')
+        .update(menu.toJson())
+        .eq('id', id);
+  }
 }
