@@ -4,7 +4,7 @@ class MenuModel {
   final int id;
   final String name;
   final double price;
-  final int? topping; // nullable karena bisa null di database
+  final int? topping;
 
   MenuModel({
     required this.id,
@@ -13,7 +13,6 @@ class MenuModel {
     this.topping,
   });
 
-  /// Factory untuk parsing dari JSON (response Supabase)
   factory MenuModel.fromJson(Map<String, dynamic> json) {
     return MenuModel(
       id: json['id'] as int,
@@ -23,7 +22,6 @@ class MenuModel {
     );
   }
 
-  /// Convert ke JSON (untuk insert/update ke Supabase)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -33,12 +31,15 @@ class MenuModel {
     };
   }
 
-  /// Convert ke Entity
   MenuEntity toEntity() {
-    return MenuEntity(id: id, name: name, price: price, topping: topping);
+    return MenuEntity(
+      id: id,
+      name: name,
+      price: price,
+      topping: topping,
+    );
   }
 
-  /// Create from Entity
   factory MenuModel.fromEntity(MenuEntity entity) {
     return MenuModel(
       id: entity.id,

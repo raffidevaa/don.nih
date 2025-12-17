@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
-import 'admin_menu_detail_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../data/datasources/menu_datasource.dart';
+import '../../data/models/menu_model.dart';
 import 'admin_add_menu_page.dart';
+import 'admin_menu_detail_page.dart';
+
+enum MenuAction { detail, edit }
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
@@ -10,103 +16,49 @@ class AdminHomePage extends StatefulWidget {
 }
 
 class _AdminHomePageState extends State<AdminHomePage> {
-  int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
+  String _search = '';
 
-  // Sample menu data
-  final List<Map<String, dynamic>> menuItems = [
-    {
-      'name': 'Espresso',
-      'price': 'Rp9.000',
-      'image': 'assets/images/espresso.png',
-      'category': 'coffee',
-      'description': 'Rich and bold espresso shot.',
-    },
-    {
-      'name': 'Americano',
-      'price': 'Rp18.000',
-      'image': 'assets/images/americano.png',
-      'category': 'coffee',
-      'description': 'Espresso diluted with hot water.',
-    },
-    {
-      'name': 'Cafe Latte',
-      'price': 'Rp20.000',
-      'image': 'assets/images/cafe_latte.png',
-      'category': 'coffee',
-      'description': 'Espresso with steamed milk.',
-    },
-    {
-      'name': 'Cappuccino',
-      'price': 'Rp20.000',
-      'image': 'assets/images/cappuccino.png',
-      'category': 'coffee',
-      'description': 'Espresso, Steamed Milk, and Frothed Milk.',
-    },
-    {
-      'name': 'Peach Tea',
-      'price': 'Rp18.000',
-      'image': 'assets/images/peach_tea.png',
-      'category': 'tea',
-      'description': 'Refreshing peach flavored tea.',
-    },
-    {
-      'name': 'Apple Tea',
-      'price': 'Rp18.000',
-      'image': 'assets/images/apple_tea.png',
-      'category': 'tea',
-      'description': 'Sweet apple flavored tea.',
-    },
-    {
-      'name': 'Strawberry Pancake',
-      'price': 'Rp36.000',
-      'image': 'assets/images/strawberry_pancake.png',
-      'category': 'food',
-      'description': 'Fluffy pancakes with fresh strawberries.',
-    },
-    {
-      'name': 'Japanese Curry',
-      'price': 'Rp42.000',
-      'image': 'assets/images/japanese_curry.png',
-      'category': 'food',
-      'description': 'Traditional Japanese curry with rice.',
-    },
-  ];
+  late final MenuDataSource _menuDataSource;
 
-  List<Map<String, dynamic>> get filteredMenuItems {
-    if (_searchQuery.isEmpty) return menuItems;
-    return menuItems.where((item) {
-      return item['name'].toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
+  List<MenuModel> _menus = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _menuDataSource = MenuDataSource(Supabase.instance.client);
+    _fetchMenus();
   }
 
-  void _onNavTap(int index) {
-    if (index == _currentIndex) return;
-    setState(() {
-      _currentIndex = index;
-    });
+  Future<void> _fetchMenus() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
 
-    switch (index) {
-      case 0:
-        // Already on home page
-        break;
-      case 1:
-        Navigator.pushNamed(context, '/admin-order-status');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/admin-profile');
-        break;
+      final menus = await _menuDataSource.getAllMenu();
+
+      setState(() {
+        _menus = menus;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
     }
   }
 
-  void _navigateToMenuDetail(Map<String, dynamic> menuItem) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AdminMenuDetailPage(menuItem: menuItem),
-      ),
-    );
+  List<MenuModel> get _filteredMenus {
+    return _menus
+        .where(
+          (m) => m.name.toLowerCase().contains(_search.toLowerCase()),
+        )
+        .toList();
   }
 
   void _addNewMenu() {
@@ -116,10 +68,17 @@ class _AdminHomePageState extends State<AdminHomePage> {
     );
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+      case MenuAction.edit:
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AdminAddMenuPage(menu: menu),
+          ),
+        );
+        break;
+    }
+
+    _fetchMenus();
   }
 
   @override
@@ -127,52 +86,29 @@ class _AdminHomePageState extends State<AdminHomePage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 25,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Welcome Title
-                      const Text(
-                        'Welcome, Admin!',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Plus Jakarta Sans',
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 15),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Welcome, Admin!',
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
 
-                      // Search Bar
-                      _buildSearchBar(),
-                      const SizedBox(height: 15),
-
-                      // Add Menu Button
-                      _buildAddMenuButton(),
-                      const SizedBox(height: 20),
-
-                      // Menu Grid
-                      _buildMenuGrid(),
-                    ],
+              /// SEARCH
+              TextField(
+                controller: _searchController,
+                onChanged: (v) => setState(() => _search = v),
+                decoration: InputDecoration(
+                  hintText: 'Search menu...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
                   ),
                 ),
               ),
-            ),
-            // Bottom Navigation
-            _buildBottomNav(),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildSearchBar() {
     return Container(
@@ -346,47 +282,70 @@ class _AdminHomePageState extends State<AdminHomePage> {
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.edit,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Menu Info
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    menuItem['name'],
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Plus Jakarta Sans',
-                      color: Colors.black,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    menuItem['price'],
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.normal,
-                      fontFamily: 'Plus Jakarta Sans',
-                      color: Color(0xFF666666),
-                    ),
-                  ),
-                ],
+                            itemBuilder: (context, index) {
+                              final menu = _filteredMenus[index];
+
+                              return GestureDetector(
+                                onTap: () =>
+                                    _handleMenuAction(MenuAction.detail, menu),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    border:
+                                        Border.all(color: Colors.brown.shade200),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Container(
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFFF2F2F2),
+                                            borderRadius: BorderRadius.vertical(
+                                              top: Radius.circular(16),
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.fastfood,
+                                            size: 48,
+                                            color: Colors.brown,
+                                          ),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(10),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              menu.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                            Text('Rp${menu.price.toInt()}'),
+                                          ],
+                                        ),
+                                      ),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: IconButton(
+                                          icon: const Icon(Icons.edit),
+                                          onPressed: () => _handleMenuAction(
+                                            MenuAction.edit,
+                                            menu,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
               ),
             ),
           ],

@@ -1,5 +1,5 @@
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -14,13 +14,18 @@ import 'presentation/pages/login_page.dart';
 import 'presentation/pages/admin_order_status.dart';
 import 'presentation/pages/admin_order_detail.dart';
 
-void main() async {
+// ========== ADMIN PAGES ==========
+import 'presentation/pages/admin_homepage.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
+
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
+
   usePathUrlStrategy();
   runApp(const MainApp());
 }
@@ -37,15 +42,20 @@ class MainApp extends StatelessWidget {
       theme: ThemeData(
         textTheme: GoogleFonts.poppinsTextTheme(),
       ),
-        
-      initialRoute: '/debug', 
+
+      initialRoute: '/login',
+
       routes: {
+        // ===== SYSTEM =====
         '/': (context) => const LoadingScreen(),
-        '/debug': (context) => const AllPage(),
+
+        // ===== AUTH =====
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignUpPage(),
+
+        // ===== USER =====
         '/home': (context) => const HomePage(initialIndex: 0),
-        '/order-status': (context) => const OrderStatusPage(),
+        '/order': (context) => const OrderStatusPage(),
         '/menu-detail': (context) => const MenuDetailPage(),
         '/cart': (context) => const HomePage(initialIndex: 2),
         '/favourites': (context) => const HomePage(initialIndex: 1),
