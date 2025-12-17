@@ -61,19 +61,12 @@ class _AdminHomePageState extends State<AdminHomePage> {
         .toList();
   }
 
-  Future<void> _handleMenuAction(
-    MenuAction action,
-    MenuModel menu,
-  ) async {
-    switch (action) {
-      case MenuAction.detail:
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AdminMenuDetailPage(menu: menu),
-          ),
-        );
-        break;
+  void _addNewMenu() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AdminAddMenuPage()),
+    );
+  }
 
       case MenuAction.edit:
         await Navigator.push(
@@ -117,42 +110,177 @@ class _AdminHomePageState extends State<AdminHomePage> {
                 ),
               ),
 
-              const SizedBox(height: 12),
+  Widget _buildSearchBar() {
+    return Container(
+      height: 45,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(color: const Color(0xFFCB8A58), width: 1),
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+        decoration: InputDecoration(
+          hintText: 'Search menu...',
+          hintStyle: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Plus Jakarta Sans',
+            color: Colors.grey.shade400,
+          ),
+          suffixIcon: Icon(Icons.search, color: Colors.grey.shade400, size: 22),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 12,
+          ),
+        ),
+      ),
+    );
+  }
 
-              /// ADD MENU
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AdminAddMenuPage(),
-                      ),
-                    );
-                    _fetchMenus();
-                  },
-                  child: const Text('+ Add Menu'),
-                ),
+  Widget _buildAddMenuButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 45,
+      child: ElevatedButton(
+        onPressed: _addNewMenu,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFCB8A58),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+          elevation: 0,
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Add Menu',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Plus Jakarta Sans',
+                color: Colors.white,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-              const SizedBox(height: 20),
+  Widget _buildMenuGrid() {
+    final items = filteredMenuItems;
 
-              /// MENU GRID
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _error != null
-                        ? Center(child: Text(_error!))
-                        : GridView.builder(
-                            itemCount: _filteredMenus.length,
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                              childAspectRatio: 0.8,
+    if (items.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: Text(
+            'No menu items found',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Plus Jakarta Sans',
+              color: Colors.grey,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 15,
+        mainAxisSpacing: 15,
+        childAspectRatio: 0.85,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        return _buildMenuCard(items[index]);
+      },
+    );
+  }
+
+  Widget _buildMenuCard(Map<String, dynamic> menuItem) {
+    return GestureDetector(
+      onTap: () => _navigateToMenuDetail(menuItem),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: const Color(0xFFCB8A58), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image Container with Edit Icon
+            Expanded(
+              child: Stack(
+                children: [
+                  // Image Placeholder
+                  Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(14),
+                        topRight: Radius.circular(14),
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(14),
+                        topRight: Radius.circular(14),
+                      ),
+                      child: Image.asset(
+                        menuItem['image'],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(
+                            child: Icon(
+                              Icons.image_outlined,
+                              size: 40,
+                              color: Colors.grey,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  // Edit Icon
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () => _navigateToMenuDetail(menuItem),
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFCB8A58),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
                             ),
                             itemBuilder: (context, index) {
                               final menu = _filteredMenus[index];
@@ -219,8 +347,82 @@ class _AdminHomePageState extends State<AdminHomePage> {
                             },
                           ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF422110),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(25),
+          topRight: Radius.circular(25),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(Icons.home_outlined, Icons.home, 'Home', 0),
+              _buildNavItem(
+                Icons.receipt_long_outlined,
+                Icons.receipt_long,
+                'Order',
+                1,
+              ),
+              _buildNavItem(Icons.person_outline, Icons.person, 'Profile', 2),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(
+    IconData icon,
+    IconData activeIcon,
+    String label,
+    int index,
+  ) {
+    final bool isActive = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => _onNavTap(index),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isActive ? activeIcon : icon,
+              color: isActive ? const Color(0xFFCB8A58) : Colors.white,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'Plus Jakarta Sans',
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                color: isActive ? const Color(0xFFCB8A58) : Colors.white,
+              ),
+            ),
+          ],
         ),
       ),
     );

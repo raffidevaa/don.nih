@@ -75,6 +75,44 @@ class _CartPageState extends State<CartPage> {
     setState(() => loading = false);
   }
 
+  Future<void> _confirmDeleteCart(int index) async {
+    final item = cartItems[index];
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Hapus item?"),
+          content: const Text(
+            "Apakah kamu yakin ingin menghapus item ini dari cart?",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Batal"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Hapus", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      await cartDatasource.deleteCart(item.cartId);
+
+      setState(() {
+        cartItems.removeAt(index);
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Item dihapus dari cart")));
+    }
+  }
+
   /// TOTAL HARGA
   double get totalPrice {
     return cartItems.fold(
@@ -178,17 +216,16 @@ class _CartPageState extends State<CartPage> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => Navigator.pushNamed(
-                            context,
-                            '/order-status',
-                          ),
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/order-status'),
                           child: Image.asset(
-                              'assets/images/orderhistory.png',
-                              width: 28,
-                              height: 28,),
+                            'assets/images/orderhistory.png',
+                            width: 28,
+                            height: 28,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 20),
                     for (int i = 0; i < cartItems.length; i++)
                       CartItemWidget(
@@ -197,11 +234,13 @@ class _CartPageState extends State<CartPage> {
                           setState(() => cartItems[i].quantity++);
                         },
                         onRemove: () {
-                          setState(() {
-                            if (cartItems[i].quantity > 1) {
+                          if (cartItems[i].quantity > 1) {
+                            setState(() {
                               cartItems[i].quantity--;
-                            }
-                          });
+                            });
+                          } else {
+                            _confirmDeleteCart(i);
+                          }
                         },
                       ),
                     const SizedBox(height: 30),
@@ -243,9 +282,7 @@ class _CartPageState extends State<CartPage> {
                 ),
               ),
             ),
-            Container(
-
-            )
+            Container(),
           ],
         ),
       ),
