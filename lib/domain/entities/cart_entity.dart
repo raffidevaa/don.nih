@@ -1,7 +1,7 @@
 class CartEntity {
   final int id;
   final int userId;
-  final int menuToppingId;
+  final List<int> menuToppingId;
   final double total;
   final bool isPurchased;
 

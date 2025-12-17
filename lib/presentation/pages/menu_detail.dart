@@ -1,282 +1,204 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../data/datasources/cart_datasource.dart';
+import '../../data/datasources/storage_datasource.dart';
+import '../../data/models/cart_request.dart';
 
 class MenuDetailPage extends StatefulWidget {
-  const MenuDetailPage({super.key});
+  final int? menuId;
+
+  const MenuDetailPage({super.key, this.menuId});
 
   @override
   State<MenuDetailPage> createState() => _MenuDetailPageState();
 }
 
 class _MenuDetailPageState extends State<MenuDetailPage> {
-  String size = "Regular";
-  String temperature = "Cold";
+  final supabase = Supabase.instance.client;
+
+  late CartDatasource _cartDatasource;
+  late StorageDatasource _storageDatasource;
+
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  Map<String, dynamic>? _menu;
+
+  /// UI state
+  String selectedSize = "Regular";
+  String selectedTemp = "Cold";
   bool isFavorite = false;
 
-  Map<String, bool> toppings = {
-    "Extra Espresso": true,
-    "Whipped Cream": false,
-    "Oreo": false,
-    "Vanilla Syrup": false,
-    "Caramel Syrup": false,
-    "Hazelnut Syrup": false,
-    "Salted Caramel Sauce": false,
-    "Nata de Coco": false,
-  };
+  /// toppings
+  List<Map<String, dynamic>> toppingList = [];
+  final Set<int> selectedToppingIds = {};
 
-  Map<String, int> toppingPrice = {
-    "Extra Espresso": 9000,
-    "Whipped Cream": 3000,
-    "Oreo": 6000,
-    "Vanilla Syrup": 6000,
-    "Caramel Syrup": 6000,
-    "Hazelnut Syrup": 6000,
-    "Salted Caramel Sauce": 6000,
-    "Nata de Coco": 8000,
-  };
+  /// excluded = size & temp
+  final Set<int> excludedToppingIds = {9, 10, 11, 12};
 
-  int basePrice = 20000;
+  /// mapping label → topping id
+  final Map<String, int> sizeToId = {'Regular': 11, 'Large': 9};
+  final Map<String, int> tempToId = {'Cold': 10, 'Hot': 12};
 
-  int get totalPrice {
-    int toppingTotal = toppings.entries
-        .where((e) => e.value)
-        .fold(0, (sum, e) => sum + toppingPrice[e.key]!);
-    return basePrice + toppingTotal;
-  }
+  /// price lookup
+  final Map<int, double> sizeTempPrice = {};
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Stack(
-              children: [
-                // GAMBAR ATAS
-                Image.asset(
-                  "assets/images/menu_cappucino.png",
-                  width: double.infinity,
-                  height: 350,
-                  fit: BoxFit.cover,
-                ),
+  void initState() {
+    super.initState();
+    _cartDatasource = CartDatasource();
+    _storageDatasource = StorageDatasource();
 
-                // Tombol back
-                Positioned(
-                  top: 40,
-                  left: 16,
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: CircleAvatar(
-                      radius: 24,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.arrow_back, color: Colors.brown),
-                    ),
-                  ),
-                ),
+    _fetchAll();
+    _checkIfFavorite();
+  }
 
-                // Tombol favorit
-                Positioned(
-                  top: 40,
-                  right: 16,
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() => isFavorite = !isFavorite);
-                    },
-                    child: CircleAvatar(
-                      radius: 24,
-                      backgroundColor: Colors.white,
-                      child: Icon(
-                        isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite ? Colors.red : Colors.brown,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+  // ================= FETCH =================
 
-            // CARD PUTIH OVERLAP GAMBAR
-            Transform.translate(
-              offset: const Offset(0, -40),
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 12,
-                      offset: Offset(0, -3),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 10),
+  Future<void> _fetchAll() async {
+    if (widget.menuId == null) {
+      _errorMessage = "menuId is null";
+      _isLoading = false;
+      setState(() {});
+      return;
+    }
 
-                    Text(
-                      "Cappuccino",
-                      style: TextStyle(
-                        color: Colors.brown.shade800,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+    try {
+      _isLoading = true;
+      setState(() {});
 
-                    const SizedBox(height: 14),
+      /// menu
+      final menuResp = await supabase
+          .from('menus')
+          .select('*')
+          .eq('id', widget.menuId!)
+          .maybeSingle();
 
-                    const Text(
-                      "About",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      "Espresso, Steamed Milk, and Frothed Milk.",
-                      style: TextStyle(color: Colors.black54, fontSize: 15),
-                    ),
+      if (menuResp == null) {
+        _errorMessage = "Menu not found";
+        _isLoading = false;
+        setState(() {});
+        return;
+      }
 
-                    const SizedBox(height: 25),
+      _menu = Map<String, dynamic>.from(menuResp);
 
-                    const Text(
-                      "Size",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+      /// toppings (exclude size/temp)
+      final exclude = excludedToppingIds.join(',');
+      final toppingResp = await supabase
+          .from('toppings')
+          .select('*')
+          .not('id', 'in', '($exclude)');
 
-                    Row(
-                      children: [
-                        _optionButton(
-                          "Regular",
-                          size == "Regular",
-                          () => setState(() => size = "Regular"),
-                        ),
-                        const SizedBox(width: 12),
-                        _optionButton(
-                          "Large",
-                          size == "Large",
-                          () => setState(() => size = "Large"),
-                        ),
-                      ],
-                    ),
+      toppingList = (toppingResp as List)
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
 
-                    const SizedBox(height: 25),
+      /// size & temp prices
+      final sizeTempResp = await supabase
+          .from('toppings')
+          .select('id, price')
+          .inFilter('id', excludedToppingIds.toList());
 
-                    const Text(
-                      "Temperature",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+      for (var r in sizeTempResp) {
+        sizeTempPrice[r['id']] = (r['price'] as num).toDouble();
+      }
 
-                    Row(
-                      children: [
-                        _optionButton(
-                          "Cold",
-                          temperature == "Cold",
-                          () => setState(() => temperature = "Cold"),
-                        ),
-                        const SizedBox(width: 12),
-                        _optionButton(
-                          "Hot",
-                          temperature == "Hot",
-                          () => setState(() => temperature = "Hot"),
-                        ),
-                      ],
-                    ),
+      _isLoading = false;
+      setState(() {});
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      setState(() {});
+    }
+  }
 
-                    const SizedBox(height: 25),
+  // ================= FAVORITE =================
 
-                    const Text(
-                      "Toppings",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+  Future<void> _checkIfFavorite() async {
+    final user = supabase.auth.currentUser;
+    if (user == null || widget.menuId == null) return;
 
-                    ...toppings.keys.map((key) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(key, style: const TextStyle(fontSize: 16)),
-                            Row(
-                              children: [
-                                Text("Rp${toppingPrice[key]}"),
-                                Checkbox(
-                                  value: toppings[key],
-                                  activeColor: Colors.brown,
-                                  onChanged: (v) {
-                                    setState(() => toppings[key] = v!);
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
+    final data = await supabase
+        .from('favorites')
+        .select()
+        .eq('user_id', user.id)
+        .eq('menu_id', widget.menuId!)
+        .maybeSingle();
 
-                    const SizedBox(height: 30),
+    setState(() => isFavorite = data != null);
+  }
 
-                    // TOMBOL ADD TO CART
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.brown.shade700,
-                        borderRadius: BorderRadius.circular(40),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          const Text(
-                            "Add to Cart",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Container(
-                            width: 1,
-                            height: 24,
-                            color: Colors.white54,
-                          ),
-                          Text(
-                            "Rp${totalPrice.toStringAsFixed(0)}",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+  Future<void> _toggleFavorite() async {
+    final user = supabase.auth.currentUser;
+    if (user == null || widget.menuId == null) return;
 
-                    const SizedBox(height: 50),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+    setState(() => isFavorite = !isFavorite);
+
+    try {
+      if (isFavorite) {
+        await supabase.from('favorites').insert({
+          'id': DateTime.now().millisecondsSinceEpoch,
+          'user_id': user.id,
+          'menu_id': widget.menuId!,
+        });
+      } else {
+        await supabase
+            .from('favorites')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('menu_id', widget.menuId!);
+      }
+    } catch (e) {
+      setState(() => isFavorite = !isFavorite);
+    }
+  }
+
+  // ================= PRICE =================
+
+  double get basePrice => (_menu?['price'] as num?)?.toDouble() ?? 0;
+
+  double get totalPrice {
+    double total = basePrice;
+    total += sizeTempPrice[sizeToId[selectedSize]] ?? 0;
+    total += sizeTempPrice[tempToId[selectedTemp]] ?? 0;
+
+    for (var t in toppingList) {
+      final id = t['id'] as int;
+      if (selectedToppingIds.contains(id)) {
+        total += (t['price'] as num).toDouble();
+      }
+    }
+    return total;
+  }
+
+  // ================= ADD TO CART =================
+
+  Future<void> _handleAddToCart() async {
+    final user = supabase.auth.currentUser;
+    if (user == null || widget.menuId == null) return;
+
+    final combinedToppings = [
+      ...selectedToppingIds,
+      sizeToId[selectedSize]!,
+      tempToId[selectedTemp]!,
+    ];
+
+    await _cartDatasource.addToCart(
+      CartRequest(
+        userId: user.id,
+        menuId: widget.menuId!,
+        toppings: combinedToppings,
       ),
     );
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Added to cart")));
   }
+
+  // ================= UI =================
 
   Widget _optionButton(String text, bool selected, VoidCallback onTap) {
     return Expanded(
@@ -297,6 +219,211 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
               fontSize: 16,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(body: Center(child: Text(_errorMessage!)));
+    }
+
+    final imageUrl = _storageDatasource.getImageUrl(
+      id: _menu!['id'].toString(),
+      folderName: "menu",
+      fileType: "png",
+    );
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Stack(
+              children: [
+                Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  height: 350,
+                  fit: BoxFit.cover,
+                ),
+                Positioned(
+                  top: 40,
+                  left: 16,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.brown),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 40,
+                  right: 16,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    child: IconButton(
+                      icon: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.red : Colors.brown,
+                      ),
+                      onPressed: _toggleFavorite,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            Transform.translate(
+              offset: const Offset(0, -40),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _menu!['name'],
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 25),
+                    const Text(
+                      "Size",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        _optionButton(
+                          "Regular",
+                          selectedSize == "Regular",
+                          () => setState(() => selectedSize = "Regular"),
+                        ),
+                        const SizedBox(width: 12),
+                        _optionButton(
+                          "Large",
+                          selectedSize == "Large",
+                          () => setState(() => selectedSize = "Large"),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 25),
+                    const Text(
+                      "Temperature",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        _optionButton(
+                          "Cold",
+                          selectedTemp == "Cold",
+                          () => setState(() => selectedTemp = "Cold"),
+                        ),
+                        const SizedBox(width: 12),
+                        _optionButton(
+                          "Hot",
+                          selectedTemp == "Hot",
+                          () => setState(() => selectedTemp = "Hot"),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 25),
+                    const Text(
+                      "Toppings",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    ...toppingList.map((t) {
+                      final id = t['id'] as int;
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(t['name']),
+                          Row(
+                            children: [
+                              Text("Rp${t['price']}"),
+                              Checkbox(
+                                value: selectedToppingIds.contains(id),
+                                onChanged: (v) {
+                                  setState(() {
+                                    v == true
+                                        ? selectedToppingIds.add(id)
+                                        : selectedToppingIds.remove(id);
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }),
+
+                    const SizedBox(height: 30),
+                    GestureDetector(
+                      onTap: _handleAddToCart,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.brown.shade700,
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            const Text(
+                              "Add to Cart",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 24,
+                              color: Colors.white54,
+                            ),
+                            Text(
+                              "Rp${totalPrice.toStringAsFixed(0)}",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 50),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

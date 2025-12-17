@@ -1,59 +1,91 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../../data/datasources/order_detail_datasource.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/datasources/order_datasource.dart';
 
-// --- DATA MODELS ---
-class OrderItem {
-  final int quantity;
-  final String name;
-  final String price;
+// Model untuk menggabungkan data yang diambil untuk UI
+class _OrderDetailViewData {
+  final List<Map<String, dynamic>> items;
+  final Map<String, dynamic> status;
 
-  const OrderItem({required this.quantity, required this.name, required this.price});
+  _OrderDetailViewData({required this.items, required this.status});
 }
 
-class StatusItem {
-  final String title;
-  final String subtitle;
-  final bool isCompleted;
+class OrderDetailPage extends StatefulWidget {
+  final int orderId;
 
-  const StatusItem({required this.title, required this.subtitle, this.isCompleted = false});
+  const OrderDetailPage({super.key, required this.orderId});
+
+  @override
+  State<OrderDetailPage> createState() => _OrderDetailPageState();
 }
 
-class OrderDetailPage extends StatelessWidget {
-  const OrderDetailPage({super.key});
+class _OrderDetailPageState extends State<OrderDetailPage> {
+  // Menggunakan Future untuk menampung seluruh data yang dibutuhkan view
+  late final Future<_OrderDetailViewData> _viewDataFuture;
 
-  // --- DUMMY DATA ---
-  final List<OrderItem> orderItems = const [
-    OrderItem(quantity: 2, name: 'Cappuccino', price: 'Rp58.000'),
-    OrderItem(quantity: 1, name: 'Peach Tea', price: 'Rp18.000'),
-    OrderItem(quantity: 1, name: 'Americano', price: 'Rp23.000'),
-    OrderItem(quantity: 2, name: 'Strawberry Pancake', price: 'Rp72.000'),
-    OrderItem(quantity: 1, name: 'Japanese Curry', price: 'Rp42.000'),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _viewDataFuture = _fetchViewData();
+  }
 
-  final List<StatusItem> statusHistory = const [
-    StatusItem(title: 'Waiting Confirmation', subtitle: 'April 3, 2023, 4:22 PM', isCompleted: true),
-    StatusItem(title: 'Order Confirmed', subtitle: 'April 3, 2023, 4:23 PM', isCompleted: true),
-    StatusItem(title: 'Order Processed', subtitle: 'April 3, 2023, estimated 4:25 PM'),
-    StatusItem(title: 'Order Completed', subtitle: 'April 3, 2023, estimated 5:00 PM'),
-  ];
+  // Mengambil semua data yang diperlukan secara paralel
+  Future<_OrderDetailViewData> _fetchViewData() async {
+    // Ganti OrderDetailDatasource dan OrderDatasource dengan implementasinya jika berbeda
+    final supabase = Supabase.instance.client;
 
-  // --- MAIN BUILD METHOD ---
+    final results = await Future.wait([
+      OrderDetailDatasource(supabase).getOrderDetailByOrderId(widget.orderId),
+      OrderDatasource(supabase).getOrderStatusByOrderId(widget.orderId),
+    ]);
+
+    // Ekstrak hasil dengan aman
+    final items = results[0] as List<Map<String, dynamic>>;
+    final status = results[1] as Map<String, dynamic>;
+
+    return _OrderDetailViewData(
+      items: items,
+      status: status,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(context),
-      body: ListView(
-        padding: const EdgeInsets.all(20.0),
-        children: [
-          _buildOrderSummaryCard(),
-          const SizedBox(height: 30),
-          _buildStatusTimeline(),
-        ],
+      // Gunakan FutureBuilder untuk menangani state loading, error, dan data
+      body: FutureBuilder<_OrderDetailViewData>(
+        future: _viewDataFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.items.isEmpty) {
+            return const Center(child: Text('Order details not found.'));
+          }
+
+          // Jika data berhasil didapat, bangun UI
+          final viewData = snapshot.data!;
+          return ListView(
+            padding: const EdgeInsets.all(20.0),
+            children: [
+              _buildOrderSummaryCard(viewData.items),
+              const SizedBox(height: 30),
+              _buildStatusTimeline(viewData.status['order_status'], viewData.status['created_at'], viewData.status['updated_at']),
+            ],
+          );
+        },
       ),
     );
   }
 
-  // --- WIDGET BUILDERS ---
+  // ... Helper widget lainnya (AppBar, dll) ...
 
   AppBar _buildAppBar(BuildContext context) {
     return AppBar(
@@ -71,7 +103,7 @@ class OrderDetailPage extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: const BoxDecoration(
-              color: Color(0xFF6F4E37), // Brown color
+              color: Color(0xFF6F4E37),
               shape: BoxShape.circle,
             ),
             child: IconButton(
@@ -86,7 +118,10 @@ class OrderDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildOrderSummaryCard() {
+  Widget _buildOrderSummaryCard(List<Map<String, dynamic>> orderItems) {
+    // Hitung total harga secara dinamis
+    final double total = orderItems.fold(0, (sum, item) => sum + (item['price'] as int) * (item['quantity'] as int));
+
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -98,76 +133,114 @@ class OrderDetailPage extends StatelessWidget {
         children: [
           ...orderItems.map((item) => _buildOrderItemRow(item)),
           const SizedBox(height: 16),
-          _buildSummaryRow('Payment Method', 'Cash'),
+          const Divider(height: 1, thickness: 1, color: Colors.black26),
+          const SizedBox(height: 16),
+          _buildSummaryRow('Payment Method', 'Cash'), // Masih statis, bisa diambil dari data order jika ada
           const SizedBox(height: 10),
-          _buildSummaryRow('Total', 'Rp213.000', isTotal: true),
+          _buildSummaryRow('Total', 'Rp${total.toStringAsFixed(0)}', isTotal: true),
         ],
       ),
     );
   }
 
-  Widget _buildStatusTimeline() {
-    return Column(
-      children: List.generate(statusHistory.length, (index) {
-        return _StatusTimelineItem(
-          item: statusHistory[index],
-          isLastItem: index == statusHistory.length - 1,
-        );
-      }),
-    );
-  }
+  Widget _buildOrderItemRow(Map<String, dynamic> item) {
+    final price = (item['price'] as int);
+    final quantity = item['quantity'];
+    final totalPrice = price * quantity;
+    // Akses nama menu dengan aman
+    final menuName = (item['menu_toppings']?['menus']?['name'] as String?) ?? 'Product not found';
 
-  Widget _buildOrderItemRow(OrderItem item) {
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10.0),
           child: Row(
             children: [
-              Text('${item.quantity}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+              Text('$quantity', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
               const SizedBox(width: 25),
-              Text(item.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+              Text(menuName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
               const Spacer(),
-              Text(item.price, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+              Text("Rp$totalPrice", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
-        const Divider(height: 1, thickness: 1, color: Colors.black26),
       ],
     );
   }
 
   Widget _buildSummaryRow(String title, String value, {bool isTotal = false}) {
-    final style = TextStyle(
-      fontSize: 16,
-      fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
-    );
-    return Row(
-      children: [
-        Text(title, style: style),
-        const Spacer(),
-        Text(value, style: style),
-      ],
+    final style = TextStyle(fontSize: 16, fontWeight: isTotal ? FontWeight.bold : FontWeight.w500);
+    return Row(children: [Text(title, style: style), const Spacer(), Text(value, style: style)]);
+  }
+
+  // --- TIMELINE YANG DIPERBAIKI ---
+
+  Widget _buildStatusTimeline(
+      String currentStatus,
+      String createdAt,
+      String updatedAt,
+      ) {
+    const statuses = ["WAITING", "CONFIRMED", "PROCESSED", "COMPLETED"];
+
+    final created = DateTime.parse(createdAt).toLocal();
+    final updated = DateTime.parse(updatedAt).toLocal();
+
+    final createdFmt = DateFormat('yyyy-MM-dd HH:mm').format(created);
+    final updatedFmt = DateFormat('yyyy-MM-dd HH:mm').format(updated);
+
+    final currentIndex = statuses.indexOf(currentStatus.toUpperCase());
+
+    List<String?> timestamps = [];
+
+    for (int i = 0; i < statuses.length; i++) {
+      if (i == 0) {
+        timestamps.add(createdFmt);      // WAITING
+      } else if (i == currentIndex) {
+        timestamps.add(updatedFmt);      // CURRENT STATUS
+      } else {
+        timestamps.add(null);            // NOT REACHED
+      }
+    }
+
+    return Column(
+      children: List.generate(statuses.length, (i) {
+        return _StatusTimelineItem(
+          status: statuses[i],
+          timeStamp: timestamps[i],
+          isCompleted: i <= currentIndex,
+          isLastItem: i == statuses.length - 1,
+        );
+      }),
     );
   }
 }
 
-
-// --- CUSTOM TIMELINE WIDGET ---
+// --- WIDGET TIMELINE ITEM YANG DIPERBAIKI ---
 
 class _StatusTimelineItem extends StatelessWidget {
-  final StatusItem item;
+  final String status;
+  final bool isCompleted;
   final bool isLastItem;
+  final String? timeStamp;
 
-  const _StatusTimelineItem({required this.item, this.isLastItem = false});
+  const _StatusTimelineItem({
+    required this.status,
+    required this.isCompleted,
+    required this.isLastItem,
+    required this.timeStamp,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final statusMap = {
+      "WAITING": "Waiting Confirmation",
+      "CONFIRMED": "Order Confirmed",
+      "PROCESSED": "Order Processed",
+      "COMPLETED": "Order Completed",
+    };
+
     final Color activeColor = const Color(0xFFC89B64);
     final Color inactiveColor = Colors.grey.shade400;
-    final Color iconBgColor = item.isCompleted ? activeColor : inactiveColor;
-    final Color textColor = item.isCompleted ? activeColor : inactiveColor;
-    final FontWeight fontWeight = item.isCompleted ? FontWeight.bold : FontWeight.normal;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,7 +250,7 @@ class _StatusTimelineItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
-                color: iconBgColor,
+                color: isCompleted ? activeColor : inactiveColor,
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.check, color: Colors.white, size: 16),
@@ -185,30 +258,36 @@ class _StatusTimelineItem extends StatelessWidget {
             if (!isLastItem)
               Container(
                 width: 2,
-                height: 40, // Space between circles
-                color: iconBgColor,
+                height: 50,
+                color: isCompleted ? activeColor : inactiveColor,
               ),
           ],
         ),
         const SizedBox(width: 16),
-        Padding(
-          padding: const EdgeInsets.only(top: 2.0), // Align text with icon
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.title,
-                style: TextStyle(fontSize: 18, color: textColor, fontWeight: fontWeight),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              statusMap[status] ?? status,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: isCompleted ? FontWeight.bold : FontWeight.w500,
+                color: isCompleted ? Colors.black : inactiveColor,
               ),
-              const SizedBox(height: 4),
-              Text(
-                item.subtitle,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              timeStamp ?? "",
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isCompleted ? FontWeight.bold : FontWeight.w500,
+                color: isCompleted ? Colors.black : inactiveColor,
               ),
-            ],
-          ),
-        ),
+            ),
+          ],
+        )
       ],
     );
   }
 }
+

@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'order_detail.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/datasources/order_datasource.dart';
+import '../../domain/entities/order_entity.dart';
 
 // Model data untuk setiap pesanan
-class Order {
-  final String id;
-  final String price;
-  final String status;
-
-  Order({required this.id, required this.price, required this.status});
-}
-
 class OrderStatusPage extends StatefulWidget {
   const OrderStatusPage({super.key});
 
@@ -17,16 +12,15 @@ class OrderStatusPage extends StatefulWidget {
   State<OrderStatusPage> createState() => _OrderStatusPageState();
 }
 
-class _OrderStatusPageState extends State<OrderStatusPage> {
-  // Data dummy yang sesuai dengan desain
-  final List<Order> _orders = [
-    Order(id: '#005', price: '213.000', status: 'Order Confirmed'),
-    Order(id: '#004', price: '84.000', status: 'Order Processed'),
-    Order(id: '#003', price: '184.000', status: 'Order Completed'),
-    Order(id: '#002', price: '96.000', status: 'Order Completed'),
-    Order(id: '#001', price: '20.000', status: 'Order Completed'),
-  ];
+Future<List<OrderEntity>> _fetchOrderHistory() async {
+  final authUser = Supabase.instance.client.auth.currentUser;
+  final orderHistory = OrderDatasource(
+    Supabase.instance.client,
+  ).getOrdersByUserId(authUser!.id);
+  return orderHistory;
+}
 
+class _OrderStatusPageState extends State<OrderStatusPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,7 +31,11 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
         centerTitle: false,
         title: const Text(
           "Order Status",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 30),
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 30,
+          ),
         ),
         leading: Padding(
           padding: const EdgeInsets.only(left: 20.0),
@@ -51,7 +49,11 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
               ),
               child: IconButton(
                 padding: EdgeInsets.zero,
-                icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: () {
                   Navigator.pop(context);
                 },
@@ -60,13 +62,31 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
           ),
         ),
       ),
-      body: ListView.builder(
-        // 4. Padding diperbaiki
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
-        itemCount: _orders.length,
-        itemBuilder: (context, index) {
-          final order = _orders[index];
-          return OrderStatusCard(order: order);
+      body: FutureBuilder(
+        future: _fetchOrderHistory(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("No orders found"));
+          }
+
+          final orders = snapshot.data!;
+
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+            itemCount: orders.length,
+            itemBuilder: (context, index) {
+              final order = orders[index];
+              return OrderStatusCard(order: order);
+            },
+          );
         },
       ),
     );
@@ -75,18 +95,19 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
 
 // Widget kartu kustom untuk menampilkan detail pesanan
 class OrderStatusCard extends StatelessWidget {
-  final Order order;
+  final OrderEntity order;
 
   const OrderStatusCard({super.key, required this.order});
 
   @override
   Widget build(BuildContext context) {
-    // 2. Menambahkan GestureDetector untuk navigasi
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const OrderDetailPage()),
+          MaterialPageRoute(
+            builder: (context) => OrderDetailPage(orderId: order.id),
+          ),
         );
       },
       child: Padding(
@@ -113,13 +134,12 @@ class OrderStatusCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Rp${order.price}',
-                    // 3. Warna diperbaiki
+                    'Rp${order.netIncome}',
                     style: const TextStyle(color: Colors.grey, fontSize: 14),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    order.status,
+                    order.orderStatus,
                     style: const TextStyle(
                       color: Color(0xFFC89B64),
                       fontSize: 16,
@@ -132,7 +152,6 @@ class OrderStatusCard extends StatelessWidget {
                 width: 35,
                 height: 35,
                 decoration: const BoxDecoration(
-                  // 3. Warna diperbaiki
                   color: Color(0xFF6F4E37),
                   shape: BoxShape.circle,
                 ),
