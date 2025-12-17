@@ -5,15 +5,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
 // --- IMPORT HALAMAN ---
-import 'presentation/pages/profile_page.dart';
 import 'presentation/pages/order_status.dart';
 import 'presentation/pages/menu_detail.dart';
-import 'presentation/pages/cart_page.dart';
 import 'presentation/pages/loadingscreen.dart';
 import 'presentation/pages/homepage.dart';
-import 'presentation/pages/favourites_page.dart';
 import 'presentation/pages/sign_up_page.dart';
 import 'presentation/pages/login_page.dart';
+import 'presentation/pages/admin_order_status.dart';
+import 'presentation/pages/admin_order_detail.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +50,16 @@ class MainApp extends StatelessWidget {
         '/cart': (context) => const HomePage(initialIndex: 2),
         '/favourites': (context) => const HomePage(initialIndex: 1),
         '/profile': (context) => const HomePage(initialIndex: 3),
+        '/admin/orders': (context) => const AdminOrderStatusPage(),
+        '/admin/order-detail': (context) {
+          final orderId = ModalRoute.of(context)?.settings.arguments as int?;
+          if (orderId == null) {
+            return const Scaffold(
+              body: Center(child: Text('Order ID tidak ditemukan')),
+            );
+          }
+          return AdminOrderDetailPage(orderId: orderId);
+        },
       },
     );
   }
@@ -80,6 +89,11 @@ class AllPage extends StatelessWidget {
               ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/profile'), child: const Text('Ke Profile (/profile)')),
               const SizedBox(height: 10),
               ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/cart'), child: const Text('Ke Cart (/cart)')),
+              const SizedBox(height: 20),
+              const Divider(),
+              const Text("Admin Pages:"),
+              const SizedBox(height: 10),
+              ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/admin/orders'), child: const Text('Admin Orders (/admin/orders)')),
             ],
           ),
         ),

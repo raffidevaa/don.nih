@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/datasources/admin_order_datasource.dart';
+import '../../data/datasources/order_detail_datasource.dart';
+import '../../domain/entities/order_entity.dart';
 
 class AdminOrderDetailPage extends StatefulWidget {
-  final String orderNumber;
-  final String totalPrice;
-  final List<Map<String, dynamic>> items;
-  final String paymentMethod;
-  final int initialStatus; // 0: Waiting, 1: Confirmed, 2: Processed, 3: Completed
+  final int orderId;
 
   const AdminOrderDetailPage({
     super.key,
-    required this.orderNumber,
-    required this.totalPrice,
-    required this.items,
-    this.paymentMethod = 'Cash',
-    this.initialStatus = 0,
+    required this.orderId,
   });
 
   @override
@@ -22,50 +18,77 @@ class AdminOrderDetailPage extends StatefulWidget {
 }
 
 class _AdminOrderDetailPageState extends State<AdminOrderDetailPage> {
-  late int _currentStatus;
-  late List<Map<String, dynamic>> _statusHistory;
+  late Future<Map<String, dynamic>> _orderDataFuture;
+  bool _isUpdating = false;
+  final AdminOrderDatasource _orderDatasource = AdminOrderDatasource(Supabase.instance.client);
+  final OrderDetailDatasource _orderDetailDatasource = OrderDetailDatasource(Supabase.instance.client);
 
   @override
   void initState() {
     super.initState();
-    _currentStatus = widget.initialStatus;
-    _initializeStatusHistory();
+    _loadOrderData();
   }
 
-  void _initializeStatusHistory() {
-    final now = DateTime.now();
-    _statusHistory = [
+  void _loadOrderData() {
+    _orderDataFuture = _fetchOrderData();
+  }
+
+  Future<Map<String, dynamic>> _fetchOrderData() async {
+    final order = await _orderDatasource.getOrderById(widget.orderId);
+    if (order == null) {
+      throw Exception('Order not found');
+    }
+    
+    final orderDetails = await _orderDetailDatasource.getOrderDetailByOrderId(widget.orderId);
+    
+    return {
+      'order': order,
+      'details': orderDetails,
+    };
+  }
+
+  int _getStatusLevel(String status) {
+    switch (status) {
+      case 'WAITING':
+        return 0;
+      case 'CONFIRMED':
+        return 1;
+      case 'PROCESSED':
+        return 2;
+      case 'COMPLETED':
+        return 3;
+      default:
+        return 0;
+    }
+  }
+
+  List<Map<String, dynamic>> _initializeStatusHistory(int currentStatus, DateTime createdAt) {
+    return [
       {
         'title': 'Waiting Confirmation',
-        'timestamp': now,
-        'isCompleted': _currentStatus >= 0,
+        'timestamp': createdAt,
+        'isCompleted': currentStatus >= 0,
       },
       {
         'title': 'Order Confirmed',
-        'timestamp': _currentStatus >= 1
-            ? now.add(const Duration(minutes: 1))
-            : now.add(const Duration(minutes: 1)),
-        'isCompleted': _currentStatus >= 1,
+        'timestamp': createdAt.add(const Duration(minutes: 1)),
+        'isCompleted': currentStatus >= 1,
       },
       {
         'title': 'Order Processed',
-        'timestamp': _currentStatus >= 2
-            ? now.add(const Duration(minutes: 3))
-            : now.add(const Duration(minutes: 3)),
-        'isCompleted': _currentStatus >= 2,
+        'timestamp': createdAt.add(const Duration(minutes: 3)),
+        'isCompleted': currentStatus >= 2,
       },
       {
         'title': 'Order Completed',
-        'timestamp': _currentStatus >= 3
-            ? now.add(const Duration(minutes: 38))
-            : now.add(const Duration(minutes: 38)),
-        'isCompleted': _currentStatus >= 3,
+        'timestamp': createdAt.add(const Duration(minutes: 38)),
+        'isCompleted': currentStatus >= 3,
       },
     ];
   }
 
-  String _getButtonText() {
-    switch (_currentStatus) {
+  String _getButtonText(int currentStatus) {
+    switch (currentStatus) {
       case 0:
         return 'Confirm Order';
       case 1:
@@ -77,18 +100,129 @@ class _AdminOrderDetailPageState extends State<AdminOrderDetailPage> {
     }
   }
 
-  void _updateOrderStatus() {
-    if (_currentStatus < 3) {
+  String _getNextStatus(int currentStatus) {
+    switch (currentStatus) {
+      case 0:
+        return 'CONFIRMED';
+      case 1:
+        return 'PROCESSED';
+      case 2:
+        return 'COMPLETED';
+      default:
+        return 'COMPLETED';
+    }
+  }
+
+  Future<void> _updateOrderStatus(int currentStatus) async {
+    if (currentStatus >= 3 || _isUpdating) return;
+
+    setState(() {
+      _isUpdating = true;
+    });
+
+    try {
+      // Update status di database
+      final newStatus = _getNextStatus(currentStatus);
+      await _orderDatasource.updateOrderStatus(widget.orderId, newStatus);
+
+      // Reload data
       setState(() {
-        _currentStatus++;
-        _statusHistory[_currentStatus]['isCompleted'] = true;
-        _statusHistory[_currentStatus]['timestamp'] = DateTime.now();
+        _loadOrderData();
+        _isUpdating = false;
       });
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order status updated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isUpdating = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update status: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _orderDataFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: ${snapshot.error}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Go Back'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final data = snapshot.data!;
+        final OrderEntity order = data['order'];
+        final List<Map<String, dynamic>> orderDetails = data['details'];
+        final int currentStatus = _getStatusLevel(order.orderStatus);
+        final statusHistory = _initializeStatusHistory(currentStatus, order.createdAt);
+        
+        // Calculate total and extract menu names
+        double total = 0;
+        final List<Map<String, dynamic>> processedDetails = [];
+        
+        for (var detail in orderDetails) {
+          final price = (detail['price'] as num?)?.toDouble() ?? 0;
+          final quantity = (detail['quantity'] as int?) ?? 0;
+          total += price * quantity;
+          
+          // Extract menu name from nested structure
+          String menuName = 'Unknown Item';
+          try {
+            final menuToppings = detail['menu_toppings'] as Map<String, dynamic>?;
+            if (menuToppings != null) {
+              final menus = menuToppings['menus'] as Map<String, dynamic>?;
+              if (menus != null) {
+                menuName = menus['name'] as String? ?? 'Unknown Item';
+              }
+            }
+          } catch (e) {
+            // Keep default 'Unknown Item'
+          }
+          
+          processedDetails.add({
+            'quantity': quantity,
+            'name': menuName,
+            'price': price,
+          });
+        }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -102,7 +236,7 @@ class _AdminOrderDetailPageState extends State<AdminOrderDetailPage> {
                 Row(
                   children: [
                     GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                      onTap: () => Navigator.pop(context, true), // Return true to indicate update
                       child: Container(
                         width: 35,
                         height: 35,
@@ -122,7 +256,7 @@ class _AdminOrderDetailPageState extends State<AdminOrderDetailPage> {
                       style: TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.bold,
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Lato',
                         color: Colors.black,
                       ),
                     ),
@@ -131,22 +265,22 @@ class _AdminOrderDetailPageState extends State<AdminOrderDetailPage> {
                 const SizedBox(height: 25),
 
                 // Order Items List
-                ...widget.items.map((item) => _buildOrderItem(
-                      quantity: item['quantity'],
-                      name: item['name'],
-                      price: item['price'],
+                ...processedDetails.map((detail) => _buildOrderItem(
+                      quantity: detail['quantity'],
+                      name: detail['name'],
+                      price: detail['price'],
                     )),
                 const SizedBox(height: 15),
 
                 // Payment Method and Total
-                _buildInfoRow('Payment Method', widget.paymentMethod),
-                _buildInfoRow('Total', widget.totalPrice),
+                _buildInfoRow('Payment Method', 'Cash'),
+                _buildInfoRow('Total', 'Rp ${NumberFormat('#,###', 'id_ID').format(total)}'),
                 const SizedBox(height: 20),
 
                 // Action Button
-                if (_currentStatus < 3)
+                if (currentStatus < 3)
                   GestureDetector(
-                    onTap: _updateOrderStatus,
+                    onTap: _isUpdating ? null : () => _updateOrderStatus(currentStatus),
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
@@ -154,19 +288,32 @@ class _AdminOrderDetailPageState extends State<AdminOrderDetailPage> {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF422110),
+                        color: _isUpdating 
+                            ? const Color(0xFF422110).withOpacity(0.5)
+                            : const Color(0xFF422110),
                         borderRadius: BorderRadius.circular(34),
                       ),
-                      child: Text(
-                        _getButtonText(),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Plus Jakarta Sans',
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: _isUpdating
+                          ? const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              _getButtonText(currentStatus),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Plus Jakarta Sans',
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 const SizedBox(height: 20),
@@ -178,14 +325,14 @@ class _AdminOrderDetailPageState extends State<AdminOrderDetailPage> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Column(
-                    children: _statusHistory
+                    children: statusHistory
                         .asMap()
                         .entries
                         .map((entry) => _buildStatusItem(
                               title: entry.value['title'],
                               timestamp: entry.value['timestamp'],
                               isCompleted: entry.value['isCompleted'],
-                              isLast: entry.key == _statusHistory.length - 1,
+                              isLast: entry.key == statusHistory.length - 1,
                             ))
                         .toList(),
                   ),
@@ -196,12 +343,14 @@ class _AdminOrderDetailPageState extends State<AdminOrderDetailPage> {
         ),
       ),
     );
+      },
+    );
   }
 
   Widget _buildOrderItem({
     required int quantity,
     required String name,
-    required String price,
+    required double price,
   }) {
     return Column(
       children: [
@@ -235,7 +384,7 @@ class _AdminOrderDetailPageState extends State<AdminOrderDetailPage> {
               ),
               const SizedBox(width: 15),
               Text(
-                price,
+                'Rp ${NumberFormat('#,###', 'id_ID').format(price)}',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.normal,
