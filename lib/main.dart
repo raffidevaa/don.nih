@@ -6,6 +6,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 
 // --- IMPORT HALAMAN ---
 import 'presentation/pages/order_status.dart';
+import 'presentation/pages/order_detail.dart';
 import 'presentation/pages/menu_detail.dart';
 import 'presentation/pages/loadingscreen.dart';
 import 'presentation/pages/homepage.dart';
@@ -59,6 +60,16 @@ class MainApp extends StatelessWidget {
         '/menu-detail': (context) => const MenuDetailPage(),
         '/cart': (context) => const HomePage(initialIndex: 2),
         '/favourites': (context) => const HomePage(initialIndex: 1),
+        '/order-status': (context) => const OrderStatusPage(),
+        'order-detail': (context) {
+          final orderId = ModalRoute.of(context)?.settings.arguments as int?;
+          if (orderId == null) {
+            return const Scaffold(
+              body: Center(child: Text('Order ID tidak ditemukan')),
+            );
+          }
+          return OrderDetailPage(orderId: orderId);
+        },
         '/profile': (context) => const HomePage(initialIndex: 3),
         '/admin/orders': (context) => const AdminOrderStatusPage(),
         '/admin/order-detail': (context) {
