@@ -180,12 +180,20 @@ class _LoginPageState extends State<LoginPage> {
                                       ),
                                     ),
                                   );
-
-                                  // ⬇️ Navigate ke home
-                                  Navigator.pushReplacementNamed(
-                                    context,
-                                    '/home',
-                                  );
+                                  if (profile["role"] == "admin") {
+                                    // ⬇️ Navigate ke admin home
+                                    Navigator.pushReplacementNamed(
+                                      context,
+                                      '/admin/home',
+                                    );
+                                    return;
+                                  } else {
+                                    // ⬇️ Navigate ke user home
+                                    Navigator.pushReplacementNamed(
+                                      context,
+                                      '/home',
+                                    );
+                                  }
                                 } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text(e.toString())),
