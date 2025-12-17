@@ -112,9 +112,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
   void _addNewMenu() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AdminAddMenuPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const AdminAddMenuPage()),
     );
   }
 
@@ -182,10 +180,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(
-          color: const Color(0xFFCB8A58),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFFCB8A58), width: 1),
       ),
       child: TextField(
         controller: _searchController,
@@ -201,11 +196,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
             fontFamily: 'Plus Jakarta Sans',
             color: Colors.grey.shade400,
           ),
-          suffixIcon: Icon(
-            Icons.search,
-            color: Colors.grey.shade400,
-            size: 22,
-          ),
+          suffixIcon: Icon(Icons.search, color: Colors.grey.shade400, size: 22),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,
@@ -232,11 +223,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.add,
-              color: Colors.white,
-              size: 20,
-            ),
+            Icon(Icons.add, color: Colors.white, size: 20),
             SizedBox(width: 8),
             Text(
               'Add Menu',
@@ -255,7 +242,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
   Widget _buildMenuGrid() {
     final items = filteredMenuItems;
-    
+
     if (items.isEmpty) {
       return const Center(
         child: Padding(
@@ -295,10 +282,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: const Color(0xFFCB8A58),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0xFFCB8A58), width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
@@ -435,7 +419,12 @@ class _AdminHomePageState extends State<AdminHomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(Icons.home_outlined, Icons.home, 'Home', 0),
-              _buildNavItem(Icons.receipt_long_outlined, Icons.receipt_long, 'Order', 1),
+              _buildNavItem(
+                Icons.receipt_long_outlined,
+                Icons.receipt_long,
+                'Order',
+                1,
+              ),
               _buildNavItem(Icons.person_outline, Icons.person, 'Profile', 2),
             ],
           ),
@@ -444,7 +433,12 @@ class _AdminHomePageState extends State<AdminHomePage> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, IconData activeIcon, String label, int index) {
+  Widget _buildNavItem(
+    IconData icon,
+    IconData activeIcon,
+    String label,
+    int index,
+  ) {
     final bool isActive = _currentIndex == index;
     return GestureDetector(
       onTap: () => _onNavTap(index),
