@@ -193,10 +193,34 @@ class _AdminOrderDetailPageState extends State<AdminOrderDetailPage> {
         final int currentStatus = _getStatusLevel(order.orderStatus);
         final statusHistory = _initializeStatusHistory(currentStatus, order.createdAt);
         
-        // Calculate total
+        // Calculate total and extract menu names
         double total = 0;
+        final List<Map<String, dynamic>> processedDetails = [];
+        
         for (var detail in orderDetails) {
-          total += (detail['price'] ?? 0) * (detail['quantity'] ?? 0);
+          final price = (detail['price'] as num?)?.toDouble() ?? 0;
+          final quantity = (detail['quantity'] as int?) ?? 0;
+          total += price * quantity;
+          
+          // Extract menu name from nested structure
+          String menuName = 'Unknown Item';
+          try {
+            final menuToppings = detail['menu_toppings'] as Map<String, dynamic>?;
+            if (menuToppings != null) {
+              final menus = menuToppings['menus'] as Map<String, dynamic>?;
+              if (menus != null) {
+                menuName = menus['name'] as String? ?? 'Unknown Item';
+              }
+            }
+          } catch (e) {
+            // Keep default 'Unknown Item'
+          }
+          
+          processedDetails.add({
+            'quantity': quantity,
+            'name': menuName,
+            'price': price,
+          });
         }
 
     return Scaffold(
@@ -241,15 +265,15 @@ class _AdminOrderDetailPageState extends State<AdminOrderDetailPage> {
                 const SizedBox(height: 25),
 
                 // Order Items List
-                ...orderDetails.map((detail) => _buildOrderItem(
+                ...processedDetails.map((detail) => _buildOrderItem(
                       quantity: detail['quantity'],
-                      name: detail['menu_name'] ?? 'Unknown Item',
+                      name: detail['name'],
                       price: detail['price'],
                     )),
                 const SizedBox(height: 15),
 
                 // Payment Method and Total
-                _buildInfoRow('Payment Method', order.paymentStatus),
+                _buildInfoRow('Payment Method', 'Cash'),
                 _buildInfoRow('Total', 'Rp ${NumberFormat('#,###', 'id_ID').format(total)}'),
                 const SizedBox(height: 20),
 
