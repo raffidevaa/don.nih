@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/datasources/menu_datasource.dart';
 import '../../data/models/menu_model.dart';
+import 'package:donnih/presentation/widgets/admin_page_nav.dart';
 import 'admin_add_menu_page.dart';
 import 'admin_menu_detail_page.dart';
 
@@ -16,6 +17,7 @@ class AdminHomePage extends StatefulWidget {
 }
 
 class _AdminHomePageState extends State<AdminHomePage> {
+    int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
   String _search = '';
 
@@ -87,6 +89,23 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
     _fetchMenus();
   }
+
+  void _onNavTap(int index) {
+  if (index == _currentIndex) return;
+
+  switch (index) {
+    case 0:
+      Navigator.pushReplacementNamed(context, '/admin/home');
+      break;
+    case 1:
+      Navigator.pushReplacementNamed(context, '/admin/orders');
+      break;
+    case 2:
+      Navigator.pushReplacementNamed(context, '/profile');
+      break;
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -222,6 +241,10 @@ class _AdminHomePageState extends State<AdminHomePage> {
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: AdminPageNav(
+      currentIndex: _currentIndex,
+      onTap: _onNavTap,
       ),
     );
   }

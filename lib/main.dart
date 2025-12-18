@@ -61,7 +61,7 @@ class MainApp extends StatelessWidget {
         '/cart': (context) => const HomePage(initialIndex: 2),
         '/favourites': (context) => const HomePage(initialIndex: 1),
         '/order-status': (context) => const OrderStatusPage(),
-        'order-detail': (context) {
+        '/order-detail': (context) {
           final orderId = ModalRoute.of(context)?.settings.arguments as int?;
           if (orderId == null) {
             return const Scaffold(

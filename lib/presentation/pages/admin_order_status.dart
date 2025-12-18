@@ -56,25 +56,21 @@ class _AdminOrderStatusPageState extends State<AdminOrderStatusPage> {
   }
 
   void _onNavTap(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+  if (index == _currentIndex) return;
 
-    // Navigation logic
-    switch (index) {
-      case 0: // Home
-        // Navigate to admin home page
-        // Navigator.pushReplacementNamed(context, '/admin-home');
-        break;
-      case 1: // Order
-        // Already on order status page
-        break;
-      case 2: // Profile
-        // Navigate to admin profile page
-        // Navigator.pushReplacementNamed(context, '/admin-profile');
-        break;
-    }
+  switch (index) {
+    case 0:
+      Navigator.pushReplacementNamed(context, '/admin/home');
+      break;
+    case 1:
+      Navigator.pushReplacementNamed(context, '/admin/orders');
+      break;
+    case 2:
+      Navigator.pushReplacementNamed(context, '/profile');
+      break;
   }
+}
+
 
   Future<void> _navigateToDetail(int orderId) async {
     final result = await Navigator.pushNamed(
