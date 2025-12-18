@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../data/datasources/auth_datasource.dart';
 import '../../data/models/signup_request.dart';
@@ -97,18 +98,35 @@ class _SignUpPageState extends State<SignUpPage> {
     return Scaffold(
       body: Stack(
         children: [
-          // TOP SHAPE
-          ClipPath(
-            clipper: CurvedTopClipper(),
-            child: Container(height: 100, color: Colors.brown.shade200),
+          // TOP CURVE
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SizedBox(
+              height: 134,
+              child: SvgPicture.string(
+                '''<svg xmlns="http://www.w3.org/2000/svg" width="402" height="134" viewBox="0 0 402 134" fill="none">
+                  <path d="M402 0L402 129C370.5 137 333.5 137.5 293.5 100C255.123 64.021 188.5 80.5 146.5 87C104.5 93.5 27 90 0 28V0H402Z" fill="#B29F91"/>
+                </svg>''',
+                fit: BoxFit.fill,
+              ),
+            ),
           ),
 
-          // BOTTOM SHAPE
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: ClipPath(
-              clipper: CurvedBottomClipper(),
-              child: Container(height: 100, color: Colors.brown.shade200),
+          // BOTTOM CURVE
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: SizedBox(
+              height: 134,
+              child: SvgPicture.string(
+                '''<svg xmlns="http://www.w3.org/2000/svg" width="402" height="134" viewBox="0 0 402 134" fill="none">
+                  <path d="M0 133.377L0.000488281 4.37683C31.5 -3.62317 68.5 -4.12317 108.5 33.3768C146.877 69.3558 213.5 52.8768 255.5 46.3768C297.5 39.8768 375 43.3768 402 105.377V133.377H0Z" fill="#B29F91"/>
+                </svg>''',
+                fit: BoxFit.fill,
+              ),
             ),
           ),
 
@@ -136,7 +154,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       style: TextStyle(fontSize: 18, color: Colors.grey),
                     ),
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
 
                   // EMAIL
                   _buildInputField(
@@ -150,7 +168,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
                   // USERNAME
                   _buildInputField(
@@ -159,7 +177,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     validator: (v) =>
                         v == null || v.isEmpty ? "Enter your username" : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
                   // PASSWORD
                   _buildInputField(
@@ -169,7 +187,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     validator: (v) =>
                         v == null || v.isEmpty ? "Enter your password" : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
                   // FULL NAME
                   _buildInputField(
@@ -178,7 +196,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     validator: (v) =>
                         v == null || v.isEmpty ? "Enter your full name" : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
                   // PHONE NUMBER
                   _buildInputField(
@@ -189,7 +207,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         : null,
                   ),
 
-                  const SizedBox(height: 25),
+                  const SizedBox(height: 20),
 
                   // SIGN UP BUTTON
                   Container(
@@ -223,7 +241,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 2),
 
                   TextButton(
                     onPressed: () {
@@ -245,43 +263,4 @@ class _SignUpPageState extends State<SignUpPage> {
       ),
     );
   }
-}
-
-// ============================================================
-// CLIPPERS (unchanged, hanya dirapikan sedikit)
-// ============================================================
-class CurvedTopClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height - 40);
-    path.quadraticBezierTo(
-      size.width / 2,
-      size.height + 20,
-      size.width,
-      size.height - 40,
-    );
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
-}
-
-class CurvedBottomClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.moveTo(0, 40);
-    path.quadraticBezierTo(size.width / 2, -20, size.width, 40);
-    path.lineTo(size.width, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
