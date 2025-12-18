@@ -14,6 +14,7 @@ import 'presentation/pages/sign_up_page.dart';
 import 'presentation/pages/login_page.dart';
 import 'presentation/pages/admin_order_status.dart';
 import 'presentation/pages/admin_order_detail.dart';
+import 'presentation/pages/profile_page.dart';
 
 // ========== ADMIN PAGES ==========
 import 'presentation/pages/admin_homepage.dart';
@@ -70,7 +71,7 @@ class MainApp extends StatelessWidget {
           }
           return OrderDetailPage(orderId: orderId);
         },
-        '/profile': (context) => const HomePage(initialIndex: 3),
+        '/profile': (context) => const ProfilePage(),
         '/admin/orders': (context) => const AdminOrderStatusPage(),
         '/admin/order-detail': (context) {
           final orderId = ModalRoute.of(context)?.settings.arguments as int?;
