@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,110 +12,125 @@ class AdminAddMenuPage extends StatefulWidget {
 class _AdminAddMenuPageState extends State<AdminAddMenuPage> {
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
-  File? _selectedImage;
+
+  final ImagePicker _picker = ImagePicker();
+  final SupabaseClient supabase = Supabase.instance.client;
+
+  XFile? _selectedImage;
   bool _isLoading = false;
 
+  // =========================
+  // PICK IMAGE (WEB + MOBILE)
+  // =========================
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
+    final image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
       setState(() {
-        _selectedImage = File(pickedFile.path);
+        _selectedImage = image;
       });
     }
   }
 
+  // =========================
+  // SAVE MENU + UPLOAD IMAGE
+  // =========================
   Future<void> _saveMenu() async {
     if (_nameController.text.isEmpty || _priceController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama & harga wajib diisi')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Nama & harga wajib diisi')));
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final supabase = Supabase.instance.client;
+      // 1️⃣ INSERT MENU (tanpa img dulu)
+      final inserted = await supabase
+          .from('menus')
+          .insert({
+            'name': _nameController.text,
+            'price': double.parse(_priceController.text),
+          })
+          .select()
+          .single();
 
-      String? filePath;
+      final int menuId = inserted['id'];
 
-      // 1. Upload image to storage (optional)
+      // 2️⃣ UPLOAD IMAGE (JIKA ADA)
       if (_selectedImage != null) {
-        final fileName = 'menu_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        filePath = 'menus/$fileName';
+        final bytes = await _selectedImage!.readAsBytes();
+        final ext = _selectedImage!.name.split('.').last.toLowerCase();
 
-        await supabase.storage.from('don-nih').upload(
+        // 🔥 PATH KONSISTEN
+        final filePath = 'menu/${menuId}_menu.$ext';
+
+        // 1️⃣ UPLOAD
+        await supabase.storage
+            .from('menu') // BUCKET NAME
+            .uploadBinary(
               filePath,
-              _selectedImage!,
-              fileOptions: const FileOptions(upsert: true),
+              bytes,
+              fileOptions: FileOptions(upsert: true, contentType: 'image/$ext'),
             );
+
+        // 2️⃣ SIMPAN PATH KE DB (BUKAN URL)
+        await supabase.from('menus').update({'img': filePath}).eq('id', menuId);
       }
 
-      // 2. Insert menu to database
-      // Table menus hanya punya: id, name, price, img
-      final data = {
-        'name': _nameController.text,
-        'price': int.parse(_priceController.text),
-        if (filePath != null) 'img': filePath, // Kolom img, bukan image_path
-      };
+      if (!mounted) return;
 
-      await supabase.from('menus').insert(data);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Menu berhasil ditambahkan')),
+      );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Menu berhasil ditambahkan!')),
-        );
-        Navigator.pop(context, true); // Return true to refresh list
-      }
+      Navigator.pop(context, true);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
+  // =========================
+  // UI
+  // =========================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // Background image area
+          /// IMAGE AREA
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: 447,
+            height: 420,
             child: Container(
               color: const Color(0xFFB29F91),
               child: Center(
                 child: GestureDetector(
                   onTap: _pickImage,
                   child: Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF846046),
+                    width: 100,
+                    height: 100,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF846046),
                       shape: BoxShape.circle,
                     ),
                     child: _selectedImage != null
                         ? ClipOval(
-                            child: Image.file(
-                              _selectedImage!,
+                            child: Image.network(
+                              _selectedImage!.path,
                               fit: BoxFit.cover,
-                              width: 60,
-                              height: 60,
                             ),
                           )
                         : const Icon(
-                            Icons.add,
+                            Icons.add_a_photo,
                             color: Colors.white,
-                            size: 30,
+                            size: 40,
                           ),
                   ),
                 ),
@@ -124,7 +138,7 @@ class _AdminAddMenuPageState extends State<AdminAddMenuPage> {
             ),
           ),
 
-          // Top bar (back button + save button)
+          /// TOP BAR
           Positioned(
             top: 25,
             left: 0,
@@ -134,33 +148,17 @@ class _AdminAddMenuPageState extends State<AdminAddMenuPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Back button
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 35,
-                      height: 35,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Color(0xFF846046),
-                        size: 20,
-                      ),
+                    child: const CircleAvatar(
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.arrow_back, color: Color(0xFF846046)),
                     ),
                   ),
-
-                  // Save button
                   ElevatedButton(
                     onPressed: _isLoading ? null : _saveMenu,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF846046),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 27,
-                        vertical: 5,
-                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
@@ -170,105 +168,59 @@ class _AdminAddMenuPageState extends State<AdminAddMenuPage> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
                               strokeWidth: 2,
+                              color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            'Save',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                        : const Text('Save'),
                   ),
                 ],
               ),
             ),
           ),
 
-          // Form area
+          /// FORM
           Positioned(
-            top: 324,
+            top: 300,
             left: 0,
             right: 0,
             bottom: 0,
             child: Container(
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.fromLTRB(20, 40, 20, 40),
+              decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(40),
-                  topRight: Radius.circular(40),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
               ),
-              padding: const EdgeInsets.fromLTRB(20, 50, 20, 50),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Menu Name field
-                    const Text(
-                      'Menu Name',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF422110),
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Menu Name',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Enter menu name',
                     ),
-                    const SizedBox(height: 5),
-                    Container(
-                      height: 60,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFFB29F91)),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: TextField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 15,
-                            vertical: 18,
-                          ),
-                          hintText: 'Enter menu name',
-                        ),
-                      ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Price',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _priceController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Enter price',
                     ),
-
-                    const SizedBox(height: 15),
-
-                    // Price field
-                    const Text(
-                      'Price',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF422110),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Container(
-                      height: 60,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFFB29F91)),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: TextField(
-                        controller: _priceController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 15,
-                            vertical: 18,
-                          ),
-                          hintText: 'Enter price',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

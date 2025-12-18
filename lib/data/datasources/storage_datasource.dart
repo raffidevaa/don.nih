@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StorageDatasource {
   final SupabaseClient supabase = Supabase.instance.client;
-  final String bucketName = 'don.nih!';
+  final String bucketName = 'menu';
 
   /// format file name: {id}_{folderName}.{fileExt}
   String _generateFileName({
