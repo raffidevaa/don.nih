@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,17 +22,34 @@ class _LoginPageState extends State<LoginPage> {
       body: Stack(
         children: [
           // TOP CURVE
-          ClipPath(
-            clipper: CurvedTopClipper(),
-            child: Container(height: 130, color: Colors.brown.shade200),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SizedBox(
+              height: 134,
+              child: SvgPicture.string(
+                '''<svg xmlns="http://www.w3.org/2000/svg" width="402" height="134" viewBox="0 0 402 134" fill="none">
+                  <path d="M402 0L402 129C370.5 137 333.5 137.5 293.5 100C255.123 64.021 188.5 80.5 146.5 87C104.5 93.5 27 90 0 28V0H402Z" fill="#B29F91"/>
+                </svg>''',
+                fit: BoxFit.fill,
+              ),
+            ),
           ),
 
           // BOTTOM CURVE
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: ClipPath(
-              clipper: CurvedBottomClipper(),
-              child: Container(height: 130, color: Colors.brown.shade200),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: SizedBox(
+              height: 134,
+              child: SvgPicture.string(
+                '''<svg xmlns="http://www.w3.org/2000/svg" width="402" height="134" viewBox="0 0 402 134" fill="none">
+                  <path d="M0 133.377L0.000488281 4.37683C31.5 -3.62317 68.5 -4.12317 108.5 33.3768C146.877 69.3558 213.5 52.8768 255.5 46.3768C297.5 39.8768 375 43.3768 402 105.377V133.377H0Z" fill="#B29F91"/>
+                </svg>''',
+                fit: BoxFit.fill,
+              ),
             ),
           ),
 
@@ -145,7 +163,7 @@ class _LoginPageState extends State<LoginPage> {
                                 setState(() => _isLoading = true);
 
                                 try {
-                                  // 🔥 Login ke Supabase
+                                  // Login ke Supabase
                                   final response = await Supabase
                                       .instance
                                       .client
@@ -160,7 +178,7 @@ class _LoginPageState extends State<LoginPage> {
                                     throw Exception("Login gagal");
                                   }
 
-                                  // 🔥 Ambil profile dari tabel users
+                                  // Ambil profile dari tabel users
                                   final profile = await Supabase.instance.client
                                       .from("users")
                                       .select()
@@ -188,7 +206,7 @@ class _LoginPageState extends State<LoginPage> {
                                     );
                                     return;
                                   } else {
-                                    // ⬇️ Navigate ke user home
+                                    // Navigate ke user home
                                     Navigator.pushReplacementNamed(
                                       context,
                                       '/home',
@@ -243,61 +261,4 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-}
-
-/// Same clippers you already use
-class CurvedTopClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    var path = Path();
-    path.lineTo(0, 0);
-    path.lineTo(0, size.height * 0.2);
-    path.quadraticBezierTo(
-      size.width * 0.5,
-      size.height,
-      size.width - 70,
-      size.height - 70,
-    );
-    path.quadraticBezierTo(
-      size.width * 0.4,
-      size.height - 70,
-      size.width,
-      size.height - 5,
-    );
-    path.lineTo(size.width, size.height * 0.3);
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(oldClipper) => false;
-}
-
-class CurvedBottomClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    var path = Path();
-    path.lineTo(0, 0);
-    path.lineTo(0, size.height * 0.2);
-    path.quadraticBezierTo(
-      size.width * 0.4,
-      size.height - 70,
-      size.width,
-      size.height - 5,
-    );
-    path.quadraticBezierTo(
-      size.width * 0.5,
-      size.height,
-      size.width - 70,
-      size.height - 70,
-    );
-    path.lineTo(size.height * 0.3, size.width);
-    path.lineTo(0, size.width);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(oldClipper) => false;
 }
