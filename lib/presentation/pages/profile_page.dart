@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:image_picker/image_picker.dart'; 
+import 'package:image_picker/image_picker.dart';
+import '../widgets/admin_page_nav.dart';
 
 // --- WARNA TEMA ---
 const Color kGoldColor = Color(0xFF8B6F47);
@@ -21,6 +22,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String _email = "";
   String _phone = "-";
   String? _avatarUrl;
+  String _role = "user"; // Default role
   
   bool _isLoading = true;
   bool _isUploading = false;
@@ -58,6 +60,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _username = data?['username'] ?? "User";
           _phone = data?['phone_number'] ?? "-";
           _avatarUrl = data?['avatar_url'];
+          _role = data?['role'] ?? "user"; // Fetch role from database
           _isLoading = false;
         });
       }
@@ -193,7 +196,42 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50], 
+      backgroundColor: Colors.grey[50],
+      bottomNavigationBar: _role == 'admin'
+          ? AdminPageNav(
+              currentIndex: 2, // Profile is index 2 for admin
+              onTap: (index) {
+                if (index == 0) {
+                  Navigator.pushReplacementNamed(context, '/admin/home');
+                } else if (index == 1) {
+                  Navigator.pushReplacementNamed(context, '/admin/orders');
+                }
+                // index 2 is current page (profile)
+              },
+            )
+          : BottomNavigationBar(
+              currentIndex: 3, // Profile is index 3 for user
+              onTap: (index) {
+                if (index == 0) {
+                  Navigator.pushReplacementNamed(context, '/home');
+                } else if (index == 1) {
+                  Navigator.pushReplacementNamed(context, '/favourites');
+                } else if (index == 2) {
+                  Navigator.pushReplacementNamed(context, '/cart');
+                }
+                // index 3 is current page (profile)
+              },
+              type: BottomNavigationBarType.fixed,
+              backgroundColor: const Color(0xFF5c3d2e),
+              selectedItemColor: Colors.white,
+              unselectedItemColor: Colors.white70,
+              items: const [
+                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+                BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favourite'),
+                BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
+                BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+              ],
+            ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: kDarkBrown))
           : SafeArea( 

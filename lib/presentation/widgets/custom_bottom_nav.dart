@@ -22,7 +22,6 @@ class CustomBottomNav extends StatelessWidget {
           navItem(icon: Icons.favorite, label: "Favourite", index: 1),
           navItem(icon: Icons.shopping_cart, label: "Cart", index: 2),
           navItem(icon: Icons.person, label: "Profile", index: 3),
-          navItem(icon: Icons.list, label: "Order Status", index: 4),
         ],
       ),
     );

@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/datasources/menu_datasource.dart';
+import '../../data/datasources/storage_datasource.dart';
 import '../../data/models/menu_model.dart';
 import 'package:donnih/presentation/widgets/admin_page_nav.dart';
 import 'admin_add_menu_page.dart';
 import 'admin_menu_detail_page.dart';
-
-enum MenuAction { detail, edit }
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
@@ -17,13 +16,16 @@ class AdminHomePage extends StatefulWidget {
 }
 
 class _AdminHomePageState extends State<AdminHomePage> {
-    int _currentIndex = 0;
+  int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
   String _search = '';
+  String? _fullName;
 
   late final MenuDataSource _menuDataSource;
+  late final StorageDatasource _storageDataSource;
 
   List<MenuModel> _menus = [];
+  final Map<int, String?> _menuImages = {};
   bool _isLoading = true;
   String? _error;
 
@@ -31,7 +33,36 @@ class _AdminHomePageState extends State<AdminHomePage> {
   void initState() {
     super.initState();
     _menuDataSource = MenuDataSource(Supabase.instance.client);
+    _storageDataSource = StorageDatasource();
+    _fetchUserData();
     _fetchMenus();
+  }
+
+  void _fetchUserData() async {
+    try {
+      final authUser = Supabase.instance.client.auth.currentUser;
+      if (authUser == null) {
+        setState(() => _fullName = "Admin");
+        return;
+      }
+
+      final profile = await Supabase.instance.client
+          .from("users")
+          .select()
+          .eq("id", authUser.id)
+          .maybeSingle();
+
+      if (profile == null) {
+        setState(() => _fullName = "Admin");
+        return;
+      }
+      if (!mounted) return;
+      setState(() {
+        _fullName = profile["fullname"] ?? "Admin";
+      });
+    } catch (e) {
+      setState(() => _fullName = "Admin");
+    }
   }
 
   Future<void> _fetchMenus() async {
@@ -42,9 +73,23 @@ class _AdminHomePageState extends State<AdminHomePage> {
       });
 
       final menus = await _menuDataSource.getAllMenu();
+      _menus = menus;
+
+      // Fetch images for each menu
+      for (var menu in menus) {
+        try {
+          final url = _storageDataSource.getImageUrl(
+            id: menu.id.toString(),
+            folderName: "menu",
+            fileType: "png",
+          );
+          _menuImages[menu.id] = url;
+        } catch (_) {
+          _menuImages[menu.id] = null;
+        }
+      }
 
       setState(() {
-        _menus = menus;
         _isLoading = false;
       });
     } catch (e) {
@@ -56,195 +101,295 @@ class _AdminHomePageState extends State<AdminHomePage> {
   }
 
   List<MenuModel> get _filteredMenus {
-    return _menus
-        .where(
-          (m) => m.name.toLowerCase().contains(_search.toLowerCase()),
-        )
+    // Get unique menus by name
+    final Map<String, MenuModel> uniqueMenus = {};
+    for (var menu in _menus) {
+      if (!uniqueMenus.containsKey(menu.name)) {
+        uniqueMenus[menu.name] = menu;
+      }
+    }
+
+    // Filter by search
+    if (_search.isEmpty) {
+      return uniqueMenus.values.toList();
+    }
+    
+    return uniqueMenus.values
+        .where((m) => m.name.toLowerCase().contains(_search.toLowerCase()))
         .toList();
   }
 
-  Future<void> _handleMenuAction(
-    MenuAction action,
-    MenuModel menu,
-  ) async {
-    switch (action) {
-      case MenuAction.detail:
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AdminMenuDetailPage(menu: menu),
-          ),
-        );
-        break;
-
-      case MenuAction.edit:
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AdminAddMenuPage(menu: menu),
-          ),
-        );
-        break;
-    }
-
+  Future<void> _navigateToDetail(MenuModel menu) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AdminMenuDetailPage(menu: menu),
+      ),
+    );
     _fetchMenus();
   }
 
   void _onNavTap(int index) {
-  if (index == _currentIndex) return;
+    if (index == _currentIndex) return;
 
-  switch (index) {
-    case 0:
-      Navigator.pushReplacementNamed(context, '/admin/home');
-      break;
-    case 1:
-      Navigator.pushReplacementNamed(context, '/admin/orders');
-      break;
-    case 2:
-      Navigator.pushReplacementNamed(context, '/profile');
-      break;
+    switch (index) {
+      case 0:
+        Navigator.pushReplacementNamed(context, '/admin/home');
+        break;
+      case 1:
+        Navigator.pushReplacementNamed(context, '/admin/orders');
+        break;
+      case 2:
+        Navigator.pushReplacementNamed(context, '/profile');
+        break;
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Welcome, Admin!',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-
-              /// SEARCH
-              TextField(
-                controller: _searchController,
-                onChanged: (v) => setState(() => _search = v),
-                decoration: InputDecoration(
-                  hintText: 'Search menu...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
+        child: Column(
+          children: [
+            // Header Section
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 35, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Welcome Text
+                  Text(
+                    'Welcome, ${_fullName ?? "Admin"}!',
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                    ),
                   ),
-                ),
-              ),
+                  const SizedBox(height: 10),
 
-              const SizedBox(height: 12),
-
-              /// ADD MENU
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AdminAddMenuPage(),
+                  // Search Bar
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: const Color(0xFFCB8A58),
+                        width: 1,
                       ),
-                    );
-                    _fetchMenus();
-                  },
-                  child: const Text('+ Add Menu'),
-                ),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (v) => setState(() => _search = v),
+                      decoration: const InputDecoration(
+                        hintText: 'Search menu...',
+                        hintStyle: TextStyle(
+                          color: Color(0xFFCBCBD4),
+                          fontSize: 16,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Color(0xFFCB8A58),
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
+            ),
 
-              const SizedBox(height: 20),
+            const SizedBox(height: 15),
 
-              /// MENU GRID
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _error != null
-                        ? Center(child: Text(_error!))
-                        : GridView.builder(
-                            itemCount: _filteredMenus.length,
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                              childAspectRatio: 0.8,
+            // Content Section
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    // Add Menu Button
+                    Container(
+                      width: double.infinity,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(17),
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFFCB8A58),
+                            Color(0xFF562B1A),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AdminAddMenuPage(),
                             ),
-                            itemBuilder: (context, index) {
-                              final menu = _filteredMenus[index];
+                          );
+                          _fetchMenus();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(17),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 25,
+                              height: 25,
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Add Menu',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
 
-                              return GestureDetector(
-                                onTap: () =>
-                                    _handleMenuAction(MenuAction.detail, menu),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    border:
-                                        Border.all(color: Colors.brown.shade200),
+                    const SizedBox(height: 15),
+
+                    // Menu Grid
+                    Expanded(
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : _error != null
+                              ? Center(
+                                  child: Text(
+                                    'Error: $_error',
+                                    style: const TextStyle(color: Colors.red),
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: Container(
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFFF2F2F2),
-                                            borderRadius: BorderRadius.vertical(
-                                              top: Radius.circular(16),
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.fastfood,
-                                            size: 48,
-                                            color: Colors.brown,
+                                )
+                              : GridView.builder(
+                                  itemCount: _filteredMenus.length,
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 22,
+                                    mainAxisSpacing: 22,
+                                    childAspectRatio: 0.8,
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    final menu = _filteredMenus[index];
+                                    final imageUrl = _menuImages[menu.id];
+
+                                    return GestureDetector(
+                                      onTap: () => _navigateToDetail(menu),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(15),
+                                          border: Border.all(
+                                            color: const Color(0xFFCB8A58),
+                                            width: 0.5,
                                           ),
                                         ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(10),
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Text(
-                                              menu.name,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                  fontWeight: FontWeight.w600),
+                                            // Image
+                                            Expanded(
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(15),
+                                                child: imageUrl != null
+                                                    ? Image.network(
+                                                        imageUrl,
+                                                        width: double.infinity,
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder:
+                                                            (_, __, ___) =>
+                                                                const Center(
+                                                          child: Icon(
+                                                            Icons.fastfood,
+                                                            size: 48,
+                                                            color: Color(
+                                                                0xFFCB8A58),
+                                                          ),
+                                                        ),
+                                                      )
+                                                    : Image.asset(
+                                                        'assets/images/caffelatte.png',
+                                                        width: double.infinity,
+                                                        fit: BoxFit.cover,
+                                                      ),
+                                              ),
                                             ),
-                                            Text('Rp${menu.price.toInt()}'),
+                                            // Menu Info
+                                            Padding(
+                                              padding: const EdgeInsets.all(10),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    menu.name,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.black,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 5),
+                                                  Text(
+                                                    'Rp${menu.price.toInt()}',
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.black,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
-                                      Align(
-                                        alignment: Alignment.centerRight,
-                                        child: IconButton(
-                                          icon: const Icon(Icons.edit),
-                                          onPressed: () => _handleMenuAction(
-                                            MenuAction.edit,
-                                            menu,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
-                          ),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: AdminPageNav(
-      currentIndex: _currentIndex,
-      onTap: _onNavTap,
+        currentIndex: _currentIndex,
+        onTap: _onNavTap,
       ),
     );
   }
